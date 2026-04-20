@@ -50,7 +50,6 @@ def generate_label_pdf(
     longitude: float,
     depth_m: float,
     platform_id: str,
-    operator: str,
     label_url: str,
     cruise_id: Optional[str] = None,
     station_id: Optional[str] = None,
@@ -104,7 +103,6 @@ def generate_label_pdf(
         meta_lines.append(f"Station: {station_id}")
     if cast_number:
         meta_lines.append(f"Cast: {cast_number}  Btl: {bottle_number or '-'}")
-    meta_lines.append(f"Operator: {operator}")
 
     meta_content = [
         Paragraph(line, tiny_bold if i == 0 else tiny)

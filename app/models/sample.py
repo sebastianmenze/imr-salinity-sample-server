@@ -25,7 +25,6 @@ class SalinitySample(Base):
     longitude = Column(Float, nullable=False)
     depth_m = Column(Float, nullable=False)
     platform_id = Column(String(100), nullable=False)
-    operator = Column(String(100), nullable=False)
     cruise_id = Column(String(50), nullable=True)
     station_id = Column(String(50), nullable=True)
     cast_number = Column(String(20), nullable=True)

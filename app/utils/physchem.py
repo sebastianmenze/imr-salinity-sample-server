@@ -138,7 +138,6 @@ class PhysChemClient:
         longitude: float,
         depth_m: float,
         platform_id: str,
-        operator: str,
         psal_lab: float,
         psal_1: Optional[float] = None,
         psal_2: Optional[float] = None,

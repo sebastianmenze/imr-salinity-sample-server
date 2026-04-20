@@ -68,7 +68,6 @@ async def submit_measurement(
             longitude=sample.longitude,
             depth_m=sample.depth_m,
             platform_id=sample.platform_id,
-            operator=sample.operator,
             psal_lab=psal_lab,
             psal_1=sample.psal_1,
             psal_2=sample.psal_2,
