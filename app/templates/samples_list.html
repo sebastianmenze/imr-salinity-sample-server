@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}All Samples — IMR Salinity Tracker{% endblock %}
+{% block subtitle %}Sample Overview{% endblock %}
+{% block content %}
+
+<div class="card">
+    <h2>📊 All Samples (last 200)</h2>
+
+    <div style="overflow-x:auto">
+        <table style="width:100%; border-collapse:collapse; font-size:0.78rem">
+            <thead>
+                <tr style="background:#f7fafc; text-align:left">
+                    <th style="padding:6px 8px">Time (UTC)</th>
+                    <th style="padding:6px 8px">Platform</th>
+                    <th style="padding:6px 8px">Depth</th>
+                    <th style="padding:6px 8px">PSAL_LAB</th>
+                    <th style="padding:6px 8px">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for s in samples %}
+            <tr style="border-top:1px solid #e2e8f0">
+                <td style="padding:6px 8px">
+                    <a href="/measure/{{ s.id }}" style="color:#003366">
+                        {{ s.utc_time.strftime('%Y-%m-%d %H:%M') }}
+                    </a>
+                </td>
+                <td style="padding:6px 8px">{{ s.platform_id }}</td>
+                <td style="padding:6px 8px">{{ s.depth_m }} m</td>
+                <td style="padding:6px 8px">
+                    {% if s.psal_lab %}{{ "%.4f"|format(s.psal_lab) }}{% else %}—{% endif %}
+                </td>
+                <td style="padding:6px 8px">
+                    <span class="status-badge status-{{ s.status.value }}">{{ s.status.value }}</span>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="padding:20px; text-align:center; color:#718096">
+                    No samples registered yet.
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Enter Salinity — IMR Salinity Tracker{% endblock %}
+{% block subtitle %}Laboratory Measurement{% endblock %}
+{% block content %}
+
+<div class="card">
+    <h2>🧪 Sample Metadata</h2>
+    <div class="meta-grid">
+        <div class="meta-item">
+            <div class="label">UTC Time</div>
+            <div class="value">{{ sample.utc_time.strftime('%Y-%m-%d %H:%M') }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Platform</div>
+            <div class="value">{{ sample.platform_id }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Latitude</div>
+            <div class="value">{{ "%.4f"|format(sample.latitude) }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Longitude</div>
+            <div class="value">{{ "%.4f"|format(sample.longitude) }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Depth</div>
+            <div class="value">{{ sample.depth_m }} m</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Operator</div>
+            <div class="value">{{ sample.operator }}</div>
+        </div>
+        {% if sample.cruise_id %}
+        <div class="meta-item">
+            <div class="label">Cruise</div>
+            <div class="value">{{ sample.cruise_id }}</div>
+        </div>
+        {% endif %}
+        {% if sample.cast_number %}
+        <div class="meta-item">
+            <div class="label">Cast / Bottle</div>
+            <div class="value">{{ sample.cast_number }} / {{ sample.bottle_number or '-' }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if sample.psal_1 or sample.psal_2 %}
+<div class="card">
+    <h2>📡 CTD Sensor Values</h2>
+    <div class="meta-grid">
+        {% if sample.psal_1 %}
+        <div class="meta-item">
+            <div class="label">PSAL Sensor 1</div>
+            <div class="value">{{ "%.4f"|format(sample.psal_1) }}</div>
+        </div>
+        {% endif %}
+        {% if sample.psal_2 %}
+        <div class="meta-item">
+            <div class="label">PSAL Sensor 2</div>
+            <div class="value">{{ "%.4f"|format(sample.psal_2) }}</div>
+        </div>
+        {% endif %}
+        {% if sample.psal_diff %}
+        <div class="meta-item">
+            <div class="label">Sensor Diff</div>
+            <div class="value" style="color: {{ '#c53030' if sample.psal_diff > 0.01 else '#276749' }}">
+                {{ "%.4f"|format(sample.psal_diff) }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if sample.status.value == 'uploaded' %}
+<div class="alert alert-success">
+    ✅ This sample has already been uploaded to PhysChem (PSAL_LAB: {{ "%.4f"|format(sample.psal_lab) }}).
+</div>
+{% else %}
+<div class="card">
+    <h2>⚗️ Enter Lab Measurement</h2>
+    <form method="post">
+        <label>PSAL_LAB (measured salinity)</label>
+        <input type="number" name="psal_lab" step="0.0001" placeholder="34.3454"
+               style="font-size:1.3rem; font-weight:bold; padding: 14px;"
+               required autofocus>
+
+        <label>Measured by</label>
+        <input type="text" name="measured_by" placeholder="Your name" required>
+
+        <label>Notes (optional)</label>
+        <textarea name="notes" rows="2" placeholder="Instrument, observations..."></textarea>
+
+        <button type="submit" class="btn btn-primary" style="font-size:1.1rem; padding:16px">
+            📤 Register Salinity Measurement
+        </button>
+    </form>
+</div>
+{% endif %}
+
+{% endblock %}

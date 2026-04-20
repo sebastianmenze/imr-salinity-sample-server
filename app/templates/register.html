@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Register Sample — IMR Salinity Tracker{% endblock %}
+{% block subtitle %}Shipboard Sample Registration{% endblock %}
+{% block content %}
+
+<div class="tab-bar">
+    <button class="tab active" id="tab-manual" onclick="showTab('manual')">✏️ Manual Entry</button>
+    <button class="tab" id="tab-bot" onclick="showTab('bot')">📁 BOT File</button>
+</div>
+
+<div id="panel-manual">
+    <div class="card">
+        <h2>Sample Metadata</h2>
+        <form method="post" action="/register/manual">
+            <label>UTC Time</label>
+            <input type="datetime-local" name="utc_time" value="{{ now }}" required>
+
+            <div class="meta-grid">
+                <div>
+                    <label>Latitude (°N)</label>
+                    <input type="number" name="latitude" step="0.0001" placeholder="61.0243" required>
+                </div>
+                <div>
+                    <label>Longitude (°E)</label>
+                    <input type="number" name="longitude" step="0.0001" placeholder="4.8038" required>
+                </div>
+            </div>
+
+            <label>Depth (m)</label>
+            <input type="number" name="depth_m" step="0.1" placeholder="5.0" required>
+
+            <label>Platform</label>
+            <select name="platform_id" required>
+                {% for p in platforms %}
+                <option>{{ p }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Operator</label>
+            <input type="text" name="operator" placeholder="Your name" required>
+
+            <label>Cruise ID (optional)</label>
+            <input type="text" name="cruise_id" placeholder="e.g. 2025107">
+
+            <label>Station ID (optional)</label>
+            <input type="text" name="station_id" placeholder="e.g. Station 42">
+
+            <label>Cast Number (optional)</label>
+            <input type="text" name="cast_number" placeholder="e.g. 5">
+
+            <label>Bottle Number (optional)</label>
+            <input type="text" name="bottle_number" placeholder="e.g. 12">
+
+            <label>PSAL Sensor 1 (optional)</label>
+            <input type="number" name="psal_1" step="0.0001" placeholder="34.3454">
+
+            <label>PSAL Sensor 2 (optional)</label>
+            <input type="number" name="psal_2" step="0.0001" placeholder="34.3448">
+
+            <label>Notes (optional)</label>
+            <textarea name="notes" rows="2" placeholder="Any observations..."></textarea>
+
+            <button type="submit" class="btn btn-primary">📝 Register &amp; Generate Label</button>
+        </form>
+    </div>
+</div>
+
+<div id="panel-bot" style="display:none">
+    <div class="card">
+        <h2>Upload Seabird BOT File</h2>
+        <div class="alert alert-info">
+            Upload a .bot file to register all bottle closures from a CTD cast at once.
+            Enter the position and platform for this cast below.
+        </div>
+        <form method="post" action="/register/bot" enctype="multipart/form-data">
+            <label>BOT File</label>
+            <input type="file" name="bot_file" accept=".bot,.txt" required>
+
+            <label>Platform</label>
+            <select name="platform_id" required>
+                {% for p in platforms %}
+                <option>{{ p }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Operator</label>
+            <input type="text" name="operator" placeholder="Your name" required>
+
+            <div class="meta-grid">
+                <div>
+                    <label>Latitude (°N)</label>
+                    <input type="number" name="latitude" step="0.0001" placeholder="61.0243" required>
+                </div>
+                <div>
+                    <label>Longitude (°E)</label>
+                    <input type="number" name="longitude" step="0.0001" placeholder="4.8038" required>
+                </div>
+            </div>
+
+            <label>Cruise ID (optional)</label>
+            <input type="text" name="cruise_id" placeholder="e.g. 2025107">
+
+            <button type="submit" class="btn btn-primary">📁 Parse BOT &amp; Register All Samples</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function showTab(name) {
+    document.getElementById('panel-manual').style.display = name === 'manual' ? 'block' : 'none';
+    document.getElementById('panel-bot').style.display = name === 'bot' ? 'block' : 'none';
+    document.getElementById('tab-manual').className = 'tab' + (name === 'manual' ? ' active' : '');
+    document.getElementById('tab-bot').className = 'tab' + (name === 'bot' ? ' active' : '');
+}
+</script>
+{% endblock %}

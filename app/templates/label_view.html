@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Sample Label — IMR Salinity Tracker{% endblock %}
+{% block subtitle %}Print Label{% endblock %}
+{% block content %}
+
+<div class="card">
+    <h2>✅ Sample Registered</h2>
+    <div class="alert alert-success">
+        Sample registered successfully. Print the label below and attach to the sample bottle.
+    </div>
+
+    <div class="meta-grid" style="margin-bottom:16px">
+        <div class="meta-item">
+            <div class="label">UTC Time</div>
+            <div class="value">{{ sample.utc_time.strftime('%Y-%m-%d %H:%M') }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Platform</div>
+            <div class="value">{{ sample.platform_id }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Latitude</div>
+            <div class="value">{{ "%.4f"|format(sample.latitude) }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Longitude</div>
+            <div class="value">{{ "%.4f"|format(sample.longitude) }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Depth</div>
+            <div class="value">{{ sample.depth_m }} m</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Operator</div>
+            <div class="value">{{ sample.operator }}</div>
+        </div>
+        {% if sample.psal_1 %}
+        <div class="meta-item">
+            <div class="label">PSAL Sensor 1</div>
+            <div class="value">{{ "%.4f"|format(sample.psal_1) }}</div>
+        </div>
+        {% endif %}
+        {% if sample.psal_2 %}
+        <div class="meta-item">
+            <div class="label">PSAL Sensor 2</div>
+            <div class="value">{{ "%.4f"|format(sample.psal_2) }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div style="text-align:center; margin: 16px 0">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?data={{ label_url | urlencode }}&size=200x200&margin=5"
+             alt="QR Code" style="border-radius:8px; border:1px solid #e2e8f0">
+        <div style="font-size:0.7rem; color:#718096; margin-top:6px; word-break:break-all">{{ label_url }}</div>
+    </div>
+
+    <a href="/label/{{ sample.id }}/pdf" class="btn btn-primary" style="display:block; text-decoration:none; text-align:center">
+        🖨️ Download Label PDF (62mm)
+    </a>
+    <a href="/" class="btn btn-secondary" style="display:block; text-decoration:none; margin-top:8px; text-align:center">
+        ➕ Register Another Sample
+    </a>
+</div>
+
+{% endblock %}

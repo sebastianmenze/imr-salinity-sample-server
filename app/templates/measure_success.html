@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Measurement Registered — IMR Salinity Tracker{% endblock %}
+{% block subtitle %}Laboratory Measurement{% endblock %}
+{% block content %}
+
+<div class="card">
+    {% if upload_result.success %}
+    <div class="alert alert-success">
+        ✅ Measurement uploaded to PhysChem successfully!
+        {% if upload_result.upload_id %}
+        <br><small>PhysChem ID: {{ upload_result.upload_id }}</small>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        ✅ Measurement saved locally.
+        {% if upload_result.message %}
+        <br><small>PhysChem: {{ upload_result.message }}</small>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <h2>Summary</h2>
+    <div class="meta-grid">
+        <div class="meta-item">
+            <div class="label">Platform</div>
+            <div class="value">{{ sample.platform_id }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Depth</div>
+            <div class="value">{{ sample.depth_m }} m</div>
+        </div>
+        {% if sample.psal_1 %}
+        <div class="meta-item">
+            <div class="label">PSAL Sensor 1</div>
+            <div class="value">{{ "%.4f"|format(sample.psal_1) }}</div>
+        </div>
+        {% endif %}
+        {% if sample.psal_2 %}
+        <div class="meta-item">
+            <div class="label">PSAL Sensor 2</div>
+            <div class="value">{{ "%.4f"|format(sample.psal_2) }}</div>
+        </div>
+        {% endif %}
+        <div class="meta-item" style="border: 2px solid #003366;">
+            <div class="label">PSAL_LAB ✓</div>
+            <div class="value" style="color:#003366; font-size:1.2rem">
+                {{ "%.4f"|format(sample.psal_lab) }}
+            </div>
+        </div>
+        <div class="meta-item">
+            <div class="label">Status</div>
+            <div class="value">
+                <span class="status-badge status-{{ sample.status.value }}">
+                    {{ sample.status.value }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a href="/" class="btn btn-primary" style="display:block; text-decoration:none; text-align:center">
+    📋 Back to Registration
+</a>
+
+{% endblock %}

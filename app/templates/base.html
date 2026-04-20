@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}IMR Salinity Tracker{% endblock %}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+               background: #f0f4f8; color: #1a202c; min-height: 100vh; }
+        .header { background: #003366; color: white; padding: 12px 20px;
+                  display: flex; align-items: center; gap: 12px; }
+        .header h1 { font-size: 1.1rem; font-weight: 600; }
+        .header .subtitle { font-size: 0.8rem; opacity: 0.75; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px 16px 80px; }
+        .card { background: white; border-radius: 10px; padding: 20px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 16px; }
+        .card h2 { font-size: 1rem; color: #003366; margin-bottom: 14px;
+                   padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+        label { display: block; font-size: 0.8rem; font-weight: 600;
+                color: #4a5568; margin-bottom: 4px; margin-top: 10px; }
+        input, select, textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid #cbd5e0;
+            border-radius: 6px; font-size: 0.95rem; background: white;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: #003366;
+            box-shadow: 0 0 0 3px rgba(0,51,102,0.1);
+        }
+        .btn { display: inline-block; padding: 12px 24px; border-radius: 8px;
+               font-size: 1rem; font-weight: 600; cursor: pointer;
+               border: none; text-decoration: none; text-align: center; }
+        .btn-primary { background: #003366; color: white; width: 100%; margin-top: 16px; }
+        .btn-primary:hover { background: #004080; }
+        .btn-secondary { background: #e2e8f0; color: #2d3748; }
+        .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .meta-item { background: #f7fafc; border-radius: 6px; padding: 8px 10px; }
+        .meta-item .label { font-size: 0.7rem; color: #718096; }
+        .meta-item .value { font-size: 0.95rem; font-weight: 600; color: #1a202c; }
+        .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px;
+                        font-size: 0.75rem; font-weight: 600; }
+        .status-registered { background: #ebf8ff; color: #2b6cb0; }
+        .status-in_lab { background: #fffff0; color: #744210; }
+        .status-measured { background: #f0fff4; color: #276749; }
+        .status-uploaded { background: #e9d8fd; color: #553c9a; }
+        .tab-bar { display: flex; gap: 0; margin-bottom: 20px; border-radius: 8px;
+                   overflow: hidden; border: 1px solid #e2e8f0; }
+        .tab { flex: 1; padding: 10px; text-align: center; font-size: 0.85rem;
+               font-weight: 600; cursor: pointer; background: #f7fafc;
+               border: none; color: #4a5568; }
+        .tab.active { background: #003366; color: white; }
+        .nav { background: white; border-top: 1px solid #e2e8f0;
+               padding: 8px 16px; display: flex; gap: 16px;
+               position: fixed; bottom: 0; left: 0; right: 0; }
+        .nav a { font-size: 0.85rem; color: #003366; text-decoration: none;
+                 padding: 6px 0; }
+        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem; }
+        .alert-success { background: #f0fff4; border: 1px solid #9ae6b4; color: #276749; }
+        .alert-error { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; }
+        .alert-info { background: #ebf8ff; border: 1px solid #90cdf4; color: #2b6cb0; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div style="font-size:1.4rem">🌊</div>
+    <div>
+        <h1>IMR Salinity Tracker</h1>
+        <div class="subtitle">{% block subtitle %}Institute of Marine Research{% endblock %}</div>
+    </div>
+</div>
+<div class="container">
+    {% block content %}{% endblock %}
+</div>
+<div class="nav">
+    <a href="/">📋 New Sample</a>
+    <a href="/samples">📊 All Samples</a>
+</div>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}BOT File Results — IMR Salinity Tracker{% endblock %}
+{% block subtitle %}BOT File Import{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="alert alert-success">
+        ✅ Parsed <strong>{{ samples|length }}</strong> bottle record(s) from <code>{{ filename }}</code>.
+        Labels are ready to print.
+    </div>
+    <h2>Registered Samples</h2>
+    {% for s in samples %}
+    <div style="display:flex; justify-content:space-between; align-items:center;
+                padding: 10px 0; border-bottom: 1px solid #e2e8f0">
+        <div>
+            <strong>Btl {{ s.bottle_number or loop.index }}</strong>
+            — {{ s.depth_m }} m
+            {% if s.psal_1 %} | PSAL₁: {{ "%.4f"|format(s.psal_1) }}{% endif %}
+            {% if s.psal_2 %} | PSAL₂: {{ "%.4f"|format(s.psal_2) }}{% endif %}
+        </div>
+        <div style="display:flex; gap:6px">
+            <a href="/label/{{ s.id }}"
+               style="background:#e2e8f0; color:#2d3748; padding:5px 10px;
+                      border-radius:6px; font-size:0.8rem; text-decoration:none">
+                🔗 View
+            </a>
+            <a href="/label/{{ s.id }}/pdf"
+               style="background:#003366; color:white; padding:5px 12px;
+                      border-radius:6px; font-size:0.8rem; text-decoration:none">
+                🖨️ PDF
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+
+    <a href="/" class="btn btn-primary" style="display:block; text-decoration:none; margin-top:16px; text-align:center">
+        ➕ New Registration
+    </a>
+</div>
+
+{% endblock %}

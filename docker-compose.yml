@@ -1,0 +1,36 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://salinity:salinity@db:5432/salinity
+      - BASE_URL=${BASE_URL:-http://localhost:8000}
+      - SECRET_KEY=${SECRET_KEY:-changeme-in-production}
+      - PHYSCHEM_API_URL=${PHYSCHEM_API_URL:-}
+      - PHYSCHEM_API_KEY=${PHYSCHEM_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./labels:/app/labels
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: salinity
+      POSTGRES_PASSWORD: salinity
+      POSTGRES_DB: salinity
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U salinity"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
