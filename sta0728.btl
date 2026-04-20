@@ -1,0 +1,270 @@
+* Sea-Bird SBE 9 Data File:
+* FileName = C:\Seabird\CTDData\sta0728.hex
+* Software Version Seasave V 7.26.7.121
+* Temperature SN = 6262
+* Conductivity SN = 4798
+* Number of Bytes Per Scan = 40
+* Number of Voltage Words = 5
+* Number of Scans Averaged by the Deck Unit = 1
+* System UpLoad Time = Oct 03 2025 03:27:12
+* NMEA Latitude = 60 52.00 N
+* NMEA Longitude = 005 21.69 E
+* NMEA UTC (Time) = Oct 03 2025  03:27:10
+* Store Lat/Lon Data = Append to Every Scan
+* SBE 11plus V 5.1e
+* number of scans to average = 1
+* pressure baud rate = 9600
+* NMEA baud rate = 4800
+* surface PAR voltage added to scan
+* A/D offset = 3
+* Latitude/Longitude added to scan
+* GPIB address = 1
+* advance primary conductivity  0.073 seconds
+* advance secondary conductivity  0.073 seconds
+* S>
+** Ship name [platform code]: G.O.Sars [4174]
+** Station: 0728
+** Cruise: 2025001014
+** Echodepth [m]:  470
+** Log [Nm]: 8013.501
+** Wind-Dir [10 deg T] Force [m/s]:  15 03
+** Airtemp (dry) [degC]: 14.2
+** Air pressure [mBar]: 1012.5
+** CTD-snr, rosette-snr, deckunit-snr: 03-1374 32-1259  11P29147-0638
+** Moonpool(M)/Skuteside(S): S
+** BIO325 Ocean Science
+* System UTC = Oct 03 2025 03:27:12
+# interval = seconds: 0.0416667
+# start_time = Oct 03 2025 03:27:12 [System UTC, header]
+# <Sensors count="15" >
+#   <sensor Channel="1" >
+#     <!-- Frequency 0, Temperature -->
+#     <TemperatureSensor SensorID="55" >
+#       <SerialNumber>6262</SerialNumber>
+#       <CalibrationDate>07-May-24</CalibrationDate>
+#       <UseG_J>1</UseG_J>
+#       <A>0.00000000e+000</A>
+#       <B>0.00000000e+000</B>
+#       <C>0.00000000e+000</C>
+#       <D>0.00000000e+000</D>
+#       <F0_Old>0.000</F0_Old>
+#       <G>4.41938844e-003</G>
+#       <H>6.43945809e-004</H>
+#       <I>2.33229003e-005</I>
+#       <J>2.18851568e-006</J>
+#       <F0>1000.000</F0>
+#       <Slope>1.00000000</Slope>
+#       <Offset>0.0000</Offset>
+#     </TemperatureSensor>
+#   </sensor>
+#   <sensor Channel="2" >
+#     <!-- Frequency 1, Conductivity -->
+#     <ConductivitySensor SensorID="3" >
+#       <SerialNumber>4798</SerialNumber>
+#       <CalibrationDate>29-Apr-25</CalibrationDate>
+#       <UseG_J>1</UseG_J>
+#       <!-- Cell const and series R are applicable only for wide range sensors. -->
+#       <SeriesR>0.0000</SeriesR>
+#       <CellConst>2000.0000</CellConst>
+#       <ConductivityType>0</ConductivityType>
+#       <Coefficients equation="0" >
+#         <A>0.00000000e+000</A>
+#         <B>0.00000000e+000</B>
+#         <C>0.00000000e+000</C>
+#         <D>0.00000000e+000</D>
+#         <M>0.0</M>
+#         <CPcor>-9.57000000e-008</CPcor>
+#       </Coefficients>
+#       <Coefficients equation="1" >
+#         <G>-9.97087176e+000</G>
+#         <H>1.28857864e+000</H>
+#         <I>4.62243192e-004</I>
+#         <J>4.41113360e-005</J>
+#         <CPcor>-9.57000000e-008</CPcor>
+#         <CTcor>3.2500e-006</CTcor>
+#         <!-- WBOTC not applicable unless ConductivityType = 1. -->
+#         <WBOTC>0.00000000e+000</WBOTC>
+#       </Coefficients>
+#       <Slope>1.00000000</Slope>
+#       <Offset>0.00000</Offset>
+#     </ConductivitySensor>
+#   </sensor>
+#   <sensor Channel="3" >
+#     <!-- Frequency 2, Pressure, Digiquartz with TC -->
+#     <PressureSensor SensorID="45" >
+#       <SerialNumber>1374</SerialNumber>
+#       <CalibrationDate>24-Oct-18</CalibrationDate>
+#       <C1>-4.951937e+004</C1>
+#       <C2>1.156310e-001</C2>
+#       <C3>1.275220e-002</C3>
+#       <D1>3.996500e-002</D1>
+#       <D2>0.000000e+000</D2>
+#       <T1>3.037162e+001</T1>
+#       <T2>-2.750540e-004</T2>
+#       <T3>3.363520e-006</T3>
+#       <T4>3.660830e-009</T4>
+#       <Slope>1.00000000</Slope>
+#       <Offset>0.00000</Offset>
+#       <T5>0.000000e+000</T5>
+#       <AD590M>1.279090e-002</AD590M>
+#       <AD590B>-8.961690e+000</AD590B>
+#     </PressureSensor>
+#   </sensor>
+#   <sensor Channel="4" >
+#     <!-- Frequency 3, Temperature, 2 -->
+#     <TemperatureSensor SensorID="55" >
+#       <SerialNumber>6211</SerialNumber>
+#       <CalibrationDate>05-Jun-24</CalibrationDate>
+#       <UseG_J>1</UseG_J>
+#       <A>0.00000000e+000</A>
+#       <B>0.00000000e+000</B>
+#       <C>0.00000000e+000</C>
+#       <D>0.00000000e+000</D>
+#       <F0_Old>0.000</F0_Old>
+#       <G>4.40222582e-003</G>
+#       <H>6.42851117e-004</H>
+#       <I>2.30968570e-005</I>
+#       <J>2.16064320e-006</J>
+#       <F0>1000.000</F0>
+#       <Slope>1.00000000</Slope>
+#       <Offset>0.0000</Offset>
+#     </TemperatureSensor>
+#   </sensor>
+#   <sensor Channel="5" >
+#     <!-- Frequency 4, Conductivity, 2 -->
+#     <ConductivitySensor SensorID="3" >
+#       <SerialNumber>3080</SerialNumber>
+#       <CalibrationDate>29-Apr-25</CalibrationDate>
+#       <UseG_J>1</UseG_J>
+#       <!-- Cell const and series R are applicable only for wide range sensors. -->
+#       <SeriesR>0.0000</SeriesR>
+#       <CellConst>2000.0000</CellConst>
+#       <ConductivityType>0</ConductivityType>
+#       <Coefficients equation="0" >
+#         <A>0.00000000e+000</A>
+#         <B>0.00000000e+000</B>
+#         <C>0.00000000e+000</C>
+#         <D>0.00000000e+000</D>
+#         <M>0.0</M>
+#         <CPcor>-9.57000000e-008</CPcor>
+#       </Coefficients>
+#       <Coefficients equation="1" >
+#         <G>-9.92808352e+000</G>
+#         <H>1.39614322e+000</H>
+#         <I>3.35964760e-004</I>
+#         <J>4.65866653e-005</J>
+#         <CPcor>-9.57000000e-008</CPcor>
+#         <CTcor>3.2500e-006</CTcor>
+#         <!-- WBOTC not applicable unless ConductivityType = 1. -->
+#         <WBOTC>0.00000000e+000</WBOTC>
+#       </Coefficients>
+#       <Slope>1.00000000</Slope>
+#       <Offset>0.00000</Offset>
+#     </ConductivitySensor>
+#   </sensor>
+#   <sensor Channel="6" >
+#     <!-- A/D voltage 0, Altimeter -->
+#     <AltimeterSensor SensorID="0" >
+#       <SerialNumber>60144</SerialNumber>
+#       <CalibrationDate>May-2013</CalibrationDate>
+#       <ScaleFactor>14.941</ScaleFactor>
+#       <Offset>0.000</Offset>
+#     </AltimeterSensor>
+#   </sensor>
+#   <sensor Channel="7" >
+#     <!-- A/D voltage 1, Oxygen, SBE 43 -->
+#     <OxygenSensor SensorID="38" >
+#       <SerialNumber>3635</SerialNumber>
+#       <CalibrationDate>24-May-25</CalibrationDate>
+#       <Use2007Equation>1</Use2007Equation>
+#       <CalibrationCoefficients equation="0" >
+#         <!-- Coefficients for Owens-Millard equation. -->
+#         <Boc>0.0000</Boc>
+#         <Soc>0.0000e+000</Soc>
+#         <offset>0.0000</offset>
+#         <Pcor>0.00e+000</Pcor>
+#         <Tcor>0.0000</Tcor>
+#         <Tau>0.0</Tau>
+#       </CalibrationCoefficients>
+#       <CalibrationCoefficients equation="1" >
+#         <!-- Coefficients for Sea-Bird equation - SBE calibration in 2007 and later. -->
+#         <Soc>4.7000e-001</Soc>
+#         <offset>-0.5231</offset>
+#         <A>-4.1358e-003</A>
+#         <B> 1.6630e-004</B>
+#         <C>-2.4647e-006</C>
+#         <D0> 2.5826e+000</D0>
+#         <D1> 1.92634e-004</D1>
+#         <D2>-4.64803e-002</D2>
+#         <E> 3.6000e-002</E>
+#         <Tau20> 1.1000</Tau20>
+#         <H1>-3.3000e-002</H1>
+#         <H2> 5.0000e+003</H2>
+#         <H3> 1.4500e+003</H3>
+#       </CalibrationCoefficients>
+#     </OxygenSensor>
+#   </sensor>
+#   <sensor Channel="8" >
+#     <!-- A/D voltage 2, Fluorometer, Chelsea Aqua 3 -->
+#     <FluoroChelseaAqua3Sensor SensorID="5" >
+#       <SerialNumber>088-251</SerialNumber>
+#       <CalibrationDate>03feb. 2012</CalibrationDate>
+#       <VB>0.223500</VB>
+#       <V1>2.099700</V1>
+#       <Vacetone>0.219200</Vacetone>
+#       <ScaleFactor>1.000000</ScaleFactor>
+#       <Slope>1.000000</Slope>
+#       <Offset>0.000000</Offset>
+#     </FluoroChelseaAqua3Sensor>
+#   </sensor>
+#   <sensor Channel="9" >
+#     <!-- A/D voltage 3, Free -->
+#   </sensor>
+#   <sensor Channel="10" >
+#     <!-- A/D voltage 4, PAR/Irradiance, Biospherical/Licor -->
+#     <PAR_BiosphericalLicorChelseaSensor SensorID="42" >
+#       <SerialNumber>70657</SerialNumber>
+#       <CalibrationDate>13. jan 2017</CalibrationDate>
+#       <M>1.00000000</M>
+#       <B>0.00000000</B>
+#       <CalibrationConstant>19723865877.71202100</CalibrationConstant>
+#       <ConversionUnits>1</ConversionUnits>
+#       <Multiplier>1.00000000</Multiplier>
+#       <Offset>0.00000000</Offset>
+#     </PAR_BiosphericalLicorChelseaSensor>
+#   </sensor>
+#   <sensor Channel="11" >
+#     <!-- A/D voltage 5, Free -->
+#   </sensor>
+#   <sensor Channel="12" >
+#     <!-- A/D voltage 6, Free -->
+#   </sensor>
+#   <sensor Channel="13" >
+#     <!-- A/D voltage 7, Free -->
+#   </sensor>
+#   <sensor Channel="14" >
+#     <!-- SPAR voltage, Unavailable -->
+#   </sensor>
+#   <sensor Channel="15" >
+#     <!-- SPAR voltage, SPAR, Biospherical/Licor -->
+#     <SPAR_Sensor SensorID="51" >
+#       <SerialNumber>20538</SerialNumber>
+#       <CalibrationDate>18.10.2021</CalibrationDate>
+#       <ConversionUnits>1</ConversionUnits>
+#       <ConversionFactor>1.5730e+003</ConversionFactor>
+#       <RatioMultiplier>1.00000000</RatioMultiplier>
+#     </SPAR_Sensor>
+#   </sensor>
+# </Sensors>
+# datcnv_date = Oct 03 2025 04:44:31, 7.26.7.129
+# datcnv_in = C:\Seabird\CTDData\sta0728.hex C:\Seabird\SBEDataProcessing-Win32\Seasoft.xmlcon
+# datcnv_ox_hysteresis_correction = yes
+# datcnv_bottle_scan_range_source = scans marked with bottle confirm bit, 0, 2
+# datcnv_scans_per_bottle = 49
+# bottlesum_date = Oct 03 2025 04:44:32, 7.26.7.129
+# bottlesum_in = C:\Seabird\CTDData\sta0728.ros C:\Seabird\SBEDataProcessing-Win32\seasoft.xmlcon C:\Seabird\CTDData\sta0728.BL
+# bottlesum_ox_tau_correction = yes
+    Bottle        Date      Sal00 Sbeox0ML/L      Sal11       PrDM      T068C      T168C      C0S/m      C1S/m
+  Position        Time                                                                                        
+      1    Oct 03 2025    35.0375     4.9272    35.0292    464.665     8.3820     8.3816   3.681043   3.680230 (avg)
+              03:35:00                                       0.087     0.0001     0.0001   0.000020   0.000019 (sdev)
