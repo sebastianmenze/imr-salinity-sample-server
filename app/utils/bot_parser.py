@@ -1,8 +1,14 @@
 """
-Parser for Seabird .bot (bottle closure) files.
+Parser for Seabird BTL (bottle summary) files produced by SBE Data Processing.
 
-BOT files are produced by SBE Data Processing and contain one row per Niskin
-bottle closure with all derived parameters at that depth.
+File format:
+  - Lines starting with '*' : metadata (NMEA position, cruise, station, platform)
+  - Lines starting with '#' : sensor configuration XML — ignored for data extraction
+  - Plain text line containing 'Bottle' and 'Date': column header
+  - Plain text line containing 'Position' and 'Time': second header row — ignored
+  - Data rows in pairs:
+      avg row:  bottle_num  Month DD YYYY  sal00  ...  prdm  ...  (avg)
+      sdev row: HH:MM:SS    sdev_values...                        (sdev)
 """
 
 import re
@@ -24,7 +30,6 @@ class BotRecord:
     utc_time: Optional[datetime] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    platform_id: Optional[str] = None
     cast_number: Optional[str] = None
 
 
@@ -33,91 +38,183 @@ class BotFile:
     records: list[BotRecord] = field(default_factory=list)
     start_time: Optional[datetime] = None
     cast_number: Optional[str] = None
+    cruise_id: Optional[str] = None
+    platform_name: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     filename: Optional[str] = None
-    raw_header: list[str] = field(default_factory=list)
-    column_names: list[str] = field(default_factory=list)
 
+
+# ---------------------------------------------------------------------------
+# Coordinate helpers
+# ---------------------------------------------------------------------------
+
+def _parse_nmea_lat(s: str) -> Optional[float]:
+    """'60 52.00 N' → 60.8667"""
+    m = re.match(r"(\d+)\s+([\d.]+)\s+([NS])", s.strip())
+    if not m:
+        return None
+    val = float(m.group(1)) + float(m.group(2)) / 60.0
+    return -val if m.group(3) == "S" else val
+
+
+def _parse_nmea_lon(s: str) -> Optional[float]:
+    """'005 21.69 E' → 5.3615"""
+    m = re.match(r"(\d+)\s+([\d.]+)\s+([EW])", s.strip())
+    if not m:
+        return None
+    val = float(m.group(1)) + float(m.group(2)) / 60.0
+    return -val if m.group(3) == "W" else val
+
+
+# ---------------------------------------------------------------------------
+# Main parser
+# ---------------------------------------------------------------------------
 
 def parse_bot_file(content: str, filename: str = "") -> BotFile:
     """
-    Parse a Seabird BOT file from string content.
+    Parse a Seabird BTL bottle summary file.
 
     Args:
-        content: Full text content of the .bot file
-        filename: Original filename (used to extract metadata if possible)
+        content : Full text of the .btl / .bot file
+        filename: Original filename (informational only)
 
     Returns:
-        BotFile with parsed records
+        BotFile with header metadata and one BotRecord per bottle closure
     """
     bot = BotFile(filename=filename)
     lines = content.splitlines()
 
-    header_lines = []
-    column_names = []
-    data_lines = []
+    col_names: list[str] = []
+    col_header_found = False
 
-    for line in lines:
+    for i, line in enumerate(lines):
         stripped = line.strip()
         if not stripped:
             continue
 
-        if stripped.startswith("#"):
-            header_lines.append(stripped)
-            # Extract column names: "# name N = varname: Description"
-            m = re.match(r"#\s+name\s+\d+\s+=\s+(\w+)", stripped)
+        # ------------------------------------------------------------------
+        # * metadata lines
+        # ------------------------------------------------------------------
+        if stripped.startswith("*"):
+            # NMEA position
+            m = re.match(r"\*\s+NMEA Latitude\s*=\s*(.+)", stripped)
             if m:
-                column_names.append(m.group(1))
-            # Extract start time: "# start_time = MMM DD YYYY HH:MM:SS"
-            m = re.match(r"#\s+start_time\s+=\s+(.+)", stripped)
+                bot.latitude = _parse_nmea_lat(m.group(1))
+
+            m = re.match(r"\*\s+NMEA Longitude\s*=\s*(.+)", stripped)
             if m:
+                bot.longitude = _parse_nmea_lon(m.group(1))
+
+            # NMEA cast start time: "Oct 03 2025  03:27:10"
+            m = re.match(r"\*\s+NMEA UTC \(Time\)\s*=\s*(.+)", stripped)
+            if m:
+                time_str = re.sub(r"\s+", " ", m.group(1).strip())
                 try:
-                    bot.start_time = datetime.strptime(
-                        m.group(1).strip(), "%b %d %Y %H:%M:%S"
-                    )
+                    bot.start_time = datetime.strptime(time_str, "%b %d %Y %H:%M:%S")
                 except ValueError:
                     pass
-            # Extract cast number
-            m = re.match(r"#\s+cast\s+(\d+)", stripped, re.IGNORECASE)
+
+            # ** Station: 0728
+            m = re.match(r"\*\*\s+Station:\s*(\S+)", stripped)
             if m:
-                bot.cast_number = m.group(1)
-        else:
-            data_lines.append(stripped)
+                bot.cast_number = m.group(1).strip()
 
-    bot.raw_header = header_lines
-    bot.column_names = column_names
+            # ** Cruise: 2025001014
+            m = re.match(r"\*\*\s+Cruise:\s*(\S+)", stripped)
+            if m:
+                bot.cruise_id = m.group(1).strip()
 
-    col_map = {name.lower(): i for i, name in enumerate(column_names)}
+            # ** Ship name [platform code]: G.O.Sars [4174]
+            m = re.match(r"\*\*\s+Ship name.*:\s*(.+?)\s*\[", stripped)
+            if m:
+                bot.platform_name = m.group(1).strip()
 
-    def find_col(*candidates) -> Optional[int]:
-        for c in candidates:
-            for key, idx in col_map.items():
-                if c.lower() in key:
-                    return idx
-        return None
-
-    depth_idx = find_col("depsm", "depth", "dep")
-    sal1_idx = find_col("sal00", "sal_1", "psal_1", "sal")
-    sal2_idx = find_col("sal11", "sal_2", "psal_2")
-    temp_idx = find_col("t090c", "temp", "potemp")
-    bottle_idx = find_col("bottle", "btl", "nbf")
-
-    for i, line in enumerate(data_lines):
-        parts = line.split()
-        if not parts:
             continue
-        try:
-            record = BotRecord(
-                depth_m=float(parts[depth_idx]) if depth_idx is not None else 0.0,
-                bottle_number=parts[bottle_idx] if bottle_idx is not None else str(i + 1),
-                psal_1=float(parts[sal1_idx]) if sal1_idx is not None else None,
-                psal_2=float(parts[sal2_idx]) if sal2_idx is not None else None,
-                temperature=float(parts[temp_idx]) if temp_idx is not None else None,
-                utc_time=bot.start_time,
-                cast_number=bot.cast_number,
-            )
-            bot.records.append(record)
-        except (IndexError, ValueError) as e:
-            logger.warning(f"Skipping BOT line {i}: {e} — '{line}'")
 
-    logger.info(f"Parsed {len(bot.records)} bottle records from {filename}")
+        # ------------------------------------------------------------------
+        # # config/sensor XML lines — skip entirely
+        # ------------------------------------------------------------------
+        if stripped.startswith("#"):
+            continue
+
+        # ------------------------------------------------------------------
+        # Column header line: contains "Bottle" and "Date"
+        # ------------------------------------------------------------------
+        if not col_header_found and "Bottle" in stripped and "Date" in stripped:
+            col_names = stripped.split()
+            col_header_found = True
+            continue
+
+        # Second header row: "Position  Time  ..."
+        if col_header_found and "Position" in stripped and "Time" in stripped:
+            continue
+
+        # ------------------------------------------------------------------
+        # Data rows — (avg) and (sdev) pairs
+        # ------------------------------------------------------------------
+        if col_header_found and stripped.endswith("(avg)"):
+            avg_parts = stripped.split()
+
+            # Grab the matching (sdev) line for the bottle timestamp
+            sdev_parts: list[str] = []
+            for j in range(i + 1, min(i + 4, len(lines))):
+                nxt = lines[j].strip()
+                if nxt.endswith("(sdev)"):
+                    sdev_parts = nxt.split()
+                    break
+
+            try:
+                bottle_num = avg_parts[0]
+
+                # avg_parts layout: [btl, Mon, DD, YYYY, col2_val, col3_val, ...]
+                # col_names layout: [Bottle, Date, col2, col3, ...]
+                # Data values start at avg_parts[4] and col_names[2]
+                date_str = f"{avg_parts[1]} {avg_parts[2]} {avg_parts[3]}"
+                time_str = sdev_parts[0] if sdev_parts else "00:00:00"
+                try:
+                    utc_time = datetime.strptime(f"{date_str} {time_str}", "%b %d %Y %H:%M:%S")
+                except ValueError:
+                    utc_time = bot.start_time
+
+                def avg_idx(col_name_substr: str) -> Optional[int]:
+                    """Map a column name substring to its index in avg_parts."""
+                    for k, name in enumerate(col_names):
+                        if col_name_substr.lower() in name.lower():
+                            # col_names[0]=Bottle → avg_parts[0]
+                            # col_names[1]=Date   → avg_parts[1..3] (3 tokens)
+                            # col_names[k>=2]     → avg_parts[k+2]
+                            return k + 2 if k >= 2 else k
+                    return None
+
+                def safe_float(parts: list, idx: Optional[int]) -> Optional[float]:
+                    if idx is None or idx >= len(parts):
+                        return None
+                    try:
+                        return float(parts[idx])
+                    except ValueError:
+                        return None
+
+                depth = safe_float(avg_parts, avg_idx("PrDM")) or 0.0
+                psal_1 = safe_float(avg_parts, avg_idx("Sal00"))
+                psal_2 = safe_float(avg_parts, avg_idx("Sal11"))
+                temperature = safe_float(avg_parts, avg_idx("T068C")) or safe_float(avg_parts, avg_idx("T090"))
+
+                record = BotRecord(
+                    depth_m=depth,
+                    bottle_number=bottle_num,
+                    psal_1=psal_1,
+                    psal_2=psal_2,
+                    temperature=temperature,
+                    utc_time=utc_time,
+                    latitude=bot.latitude,
+                    longitude=bot.longitude,
+                    cast_number=bot.cast_number,
+                )
+                bot.records.append(record)
+
+            except (IndexError, ValueError) as e:
+                logger.warning(f"Skipping BTL bottle record at line {i}: {e} — '{stripped[:80]}'")
+
+    logger.info(f"Parsed {len(bot.records)} bottle records from {filename or 'unknown'}")
     return bot

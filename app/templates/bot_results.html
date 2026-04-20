@@ -8,6 +8,16 @@
         ✅ Parsed <strong>{{ samples|length }}</strong> bottle record(s) from <code>{{ filename }}</code>.
         Labels are ready to print.
     </div>
+    {% if bot %}
+    <div style="font-size:0.8rem; color:#4a5568; margin-bottom:12px; background:#f7fafc; padding:8px 10px; border-radius:6px">
+        <strong>Auto-detected:</strong>
+        {% if bot.platform_name %}Platform: {{ bot.platform_name }}{% endif %}
+        {% if bot.cruise_id %} · Cruise: {{ bot.cruise_id }}{% endif %}
+        {% if bot.cast_number %} · Station: {{ bot.cast_number }}{% endif %}
+        {% if bot.latitude %} · Lat: {{ "%.4f"|format(bot.latitude) }}{% endif %}
+        {% if bot.longitude %} · Lon: {{ "%.4f"|format(bot.longitude) }}{% endif %}
+    </div>
+    {% endif %}
     <h2>Registered Samples</h2>
     {% for s in samples %}
     <div style="display:flex; justify-content:space-between; align-items:center;

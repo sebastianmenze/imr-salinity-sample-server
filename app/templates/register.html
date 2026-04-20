@@ -67,40 +67,41 @@
 
 <div id="panel-bot" style="display:none">
     <div class="card">
-        <h2>Upload Seabird BOT File</h2>
+        <h2>Upload Seabird BTL File</h2>
         <div class="alert alert-info">
-            Upload a .bot file to register all bottle closures from a CTD cast at once.
-            Enter the position and platform for this cast below.
+            Upload a <code>.btl</code> file to register all bottle closures from a CTD cast at once.
+            Position, cruise, and platform are read automatically from the file header.
         </div>
         <form method="post" action="/register/bot" enctype="multipart/form-data">
-            <label>BOT File</label>
-            <input type="file" name="bot_file" accept=".bot,.txt" required>
+            <label>BTL File</label>
+            <input type="file" name="bot_file" accept=".btl,.bot,.txt" required>
 
-            <label>Platform</label>
-            <select name="platform_id" required>
+            <label>Operator</label>
+            <input type="text" name="operator" placeholder="Your name" required>
+
+            <label>Platform override <span style="font-weight:400;color:#718096">(auto-detected from file)</span></label>
+            <select name="platform_id">
+                <option value="">— use value from file —</option>
                 {% for p in platforms %}
                 <option>{{ p }}</option>
                 {% endfor %}
             </select>
 
-            <label>Operator</label>
-            <input type="text" name="operator" placeholder="Your name" required>
+            <label>Cruise ID override <span style="font-weight:400;color:#718096">(auto-detected from file)</span></label>
+            <input type="text" name="cruise_id" placeholder="e.g. 2025001014 (leave blank to use file value)">
 
             <div class="meta-grid">
                 <div>
-                    <label>Latitude (°N)</label>
-                    <input type="number" name="latitude" step="0.0001" placeholder="61.0243" required>
+                    <label>Latitude override <span style="font-weight:400;color:#718096">(optional)</span></label>
+                    <input type="number" name="latitude" step="0.0001" placeholder="auto from file">
                 </div>
                 <div>
-                    <label>Longitude (°E)</label>
-                    <input type="number" name="longitude" step="0.0001" placeholder="4.8038" required>
+                    <label>Longitude override <span style="font-weight:400;color:#718096">(optional)</span></label>
+                    <input type="number" name="longitude" step="0.0001" placeholder="auto from file">
                 </div>
             </div>
 
-            <label>Cruise ID (optional)</label>
-            <input type="text" name="cruise_id" placeholder="e.g. 2025107">
-
-            <button type="submit" class="btn btn-primary">📁 Parse BOT &amp; Register All Samples</button>
+            <button type="submit" class="btn btn-primary">📁 Parse BTL &amp; Register All Samples</button>
         </form>
     </div>
 </div>

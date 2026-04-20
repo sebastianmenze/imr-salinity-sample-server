@@ -82,10 +82,10 @@ async def register_manual(
 async def register_from_bot(
     request: Request,
     bot_file: UploadFile = File(...),
-    platform_id: str = Form(...),
     operator: str = Form(...),
-    latitude: float = Form(...),
-    longitude: float = Form(...),
+    platform_id: Optional[str] = Form(None),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
     cruise_id: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
@@ -93,19 +93,32 @@ async def register_from_bot(
     bot = parse_bot_file(content, filename=bot_file.filename)
 
     if not bot.records:
-        raise HTTPException(status_code=400, detail="No bottle records found in BOT file")
+        raise HTTPException(status_code=400, detail="No bottle records found in BTL file")
+
+    # Use values from BTL header when form fields are not provided
+    resolved_platform = platform_id or bot.platform_name or "Unknown"
+    resolved_lat = latitude if latitude is not None else bot.latitude
+    resolved_lon = longitude if longitude is not None else bot.longitude
+    resolved_cruise = cruise_id or bot.cruise_id
+
+    if resolved_lat is None or resolved_lon is None:
+        raise HTTPException(
+            status_code=400,
+            detail="No NMEA position found in BTL file — please enter coordinates manually.",
+        )
 
     samples = []
     for record in bot.records:
         sample = SalinitySample(
             id=uuid.uuid4(),
             utc_time=record.utc_time or bot.start_time or datetime.utcnow(),
-            latitude=latitude,
-            longitude=longitude,
+            latitude=record.latitude if record.latitude is not None else resolved_lat,
+            longitude=record.longitude if record.longitude is not None else resolved_lon,
             depth_m=record.depth_m,
-            platform_id=platform_id,
+            platform_id=resolved_platform,
             operator=operator,
-            cruise_id=cruise_id or None,
+            cruise_id=resolved_cruise,
+            station_id=bot.cast_number,
             cast_number=record.cast_number or bot.cast_number,
             bottle_number=record.bottle_number,
             psal_1=record.psal_1,
@@ -125,6 +138,7 @@ async def register_from_bot(
         "samples": samples,
         "base_url": settings.base_url,
         "filename": bot_file.filename,
+        "bot": bot,
     })
 
 
