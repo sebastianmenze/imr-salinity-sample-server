@@ -81,6 +81,7 @@ async def submit_measurement(
         if upload_result["success"]:
             sample.status = SampleStatus.uploaded
             sample.physchem_upload_id = upload_result.get("upload_id", "")
+            sample.physchem_operation_id = str(upload_result.get("operation_id", ""))
             db.commit()
 
     db.refresh(sample)

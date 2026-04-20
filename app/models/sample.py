@@ -43,7 +43,8 @@ class SalinitySample(Base):
     # System fields
     status = Column(SAEnum(SampleStatus), default=SampleStatus.registered, nullable=False)
     notes = Column(Text, nullable=True)
-    physchem_upload_id = Column(String(100), nullable=True)
+    physchem_upload_id = Column(String(100), nullable=True)   # reading ID returned by PhysChem
+    physchem_operation_id = Column(String(50), nullable=True)  # PhysChem operation (CTD cast) ID
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     source = Column(String(20), default="manual")  # "manual" or "bot_file"
