@@ -151,7 +151,7 @@ class PhysChemClient:
                 f"{self.base_url}/instrument/{instrument_id}/parameter/list",
                 headers=self._headers(),
             )
-            logger.info(f"GET /instrument/{instrument_id}/parameter/list → {r.status_code}: {r.text[:300]}")
+            logger.info(f"GET /instrument/{instrument_id}/parameter/list → {r.status_code}: {r.text[:2000]}")
             r.raise_for_status()
             params = _parse_json(r)
 
@@ -166,9 +166,11 @@ class PhysChemClient:
             "parameterCode": "PSAL",
             "ordinal": next_ordinal,
             "suppliedParameterName": "PSAL_LAB",
-            "units": "PSU",
-            "suppliedUnits": "PSU",
+            "units": "Dmnless",
+            "processingLevel": "L0",
+            "acquirementMethod": "1019900",
         }
+        logger.info(f"Creating PSAL_LAB parameter on instrument {instrument_id} with payload: {payload}")
         async with httpx.AsyncClient(timeout=30) as client:
             r = await client.post(
                 f"{self.base_url}/instrument/{instrument_id}/parameter",
