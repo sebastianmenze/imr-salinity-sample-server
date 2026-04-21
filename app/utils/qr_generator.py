@@ -3,7 +3,7 @@ QR code and label PDF generator.
 
 Generates a printable label (PDF) for each salinity sample containing
 human-readable metadata and a QR code linking to the lab measurement URL.
-Label size: 30mm × 50mm (Phomemo M110 format).
+Label size: 50mm × 20mm landscape (Phomemo M110 format).
 """
 
 import qrcode
@@ -20,8 +20,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-LABEL_WIDTH_MM = 30
-LABEL_HEIGHT_MM = 50
+LABEL_WIDTH_MM  = 50
+LABEL_HEIGHT_MM = 20
 
 
 def generate_qr_code(url: str, size_px: int = 200) -> bytes:
@@ -57,36 +57,44 @@ def generate_label_pdf(
     output_path: Optional[str] = None,
 ) -> bytes:
     """
-    Generate a single 30mm × 50mm label PDF for a salinity sample (Phomemo M110).
+    Generate a single 50mm × 20mm landscape label PDF (Phomemo M110).
+    QR code on the right, metadata text on the left.
     Returns the PDF as bytes. Optionally saves to output_path.
     """
     buf = io.BytesIO()
 
-    w = LABEL_WIDTH_MM * rl_mm   # 85.0 pt
-    h = LABEL_HEIGHT_MM * rl_mm  # 141.7 pt
-    margin = 2 * rl_mm           # 5.67 pt
-    usable_w = w - 2 * margin    # 73.7 pt
+    w = LABEL_WIDTH_MM  * rl_mm   # 141.7 pt
+    h = LABEL_HEIGHT_MM * rl_mm   #  56.7 pt
+    margin = 1.5 * rl_mm          #   4.25 pt
+
+    # QR code fills the usable height on the right side
+    qr_size = h - 2 * margin      # ~47.2 pt = 16.7 mm
+    qr_x = w - margin - qr_size
+    qr_y = margin
+
+    # Text column sits to the left of the QR code
+    text_col_w = qr_x - margin - 1 * rl_mm   # 1 mm gap before QR
+
+    # --- build metadata lines: (text, font_name, font_size, leading) ---
+    time_str = utc_time.strftime("%Y-%m-%d %H:%M UTC")
+    lat_str  = f"{latitude:.4f}N"  if latitude  >= 0 else f"{abs(latitude):.4f}S"
+    lon_str  = f"{longitude:.4f}E" if longitude >= 0 else f"{abs(longitude):.4f}W"
+
+    lines = [
+        ("IMR Salinity Sample",       "Helvetica-Bold", 5.5, 7.0),
+        (platform_id,                 "Helvetica-Bold", 5.0, 6.5),
+        (time_str,                    "Helvetica",      4.5, 6.0),
+        (f"{lat_str}  {lon_str}",     "Helvetica",      4.5, 6.0),
+        (f"Depth: {depth_m:.1f} m",  "Helvetica",      4.5, 6.0),
+    ]
+    if cruise_id:
+        lines.append((f"Cruise: {cruise_id}", "Helvetica", 4.5, 6.0))
+    if station_id:
+        lines.append((f"Station: {station_id}", "Helvetica", 4.5, 6.0))
 
     c = rl_canvas.Canvas(buf, pagesize=(w, h))
 
-    # --- metadata text lines (font, size, leading) ---
-    time_str = utc_time.strftime("%Y-%m-%d %H:%M UTC")
-    lat_str = f"{latitude:.4f}N" if latitude >= 0 else f"{abs(latitude):.4f}S"
-    lon_str = f"{longitude:.4f}E" if longitude >= 0 else f"{abs(longitude):.4f}W"
-
-    lines = [
-        ("IMR Salinity Sample", "Helvetica-Bold", 6.0, 7.5),
-        (platform_id,           "Helvetica-Bold", 6.0, 7.5),
-        (time_str,              "Helvetica",       5.5, 7.0),
-        (f"{lat_str}  {lon_str}", "Helvetica",     5.5, 7.0),
-        (f"Depth: {depth_m:.1f} m", "Helvetica",  5.5, 7.0),
-    ]
-    if cruise_id:
-        lines.append((f"Cruise: {cruise_id}", "Helvetica", 5.5, 7.0))
-    if station_id:
-        lines.append((f"Station: {station_id}", "Helvetica", 5.5, 7.0))
-
-    # --- draw text top-down ---
+    # Draw text top-down in the left column
     y = h - margin
     for text, font, size, leading in lines:
         y -= leading
@@ -94,30 +102,24 @@ def generate_label_pdf(
         c.setFillColorRGB(0, 0, 0)
         c.drawString(margin, y, text)
 
-    # --- QR code, centred ---
-    qr_size = 22 * rl_mm
-    gap = 1.5 * rl_mm
-    y -= gap
-    qr_y = y - qr_size
-    qr_x = (w - qr_size) / 2
-    qr_bytes = generate_qr_code(label_url, size_px=150)
-    c.drawImage(ImageReader(io.BytesIO(qr_bytes)), qr_x, qr_y,
-                width=qr_size, height=qr_size)
-    y = qr_y - gap
-
-    # --- sample ID in small grey text, wrapped if too wide ---
-    id_font = "Helvetica"
-    id_size = 3.5
-    id_leading = 4.5
+    # Sample ID — tiny grey text at the bottom of the text column
+    id_font, id_size, id_leading = "Helvetica", 3.0, 4.0
     c.setFont(id_font, id_size)
     c.setFillGray(0.55)
     id_str = f"ID: {sample_id}"
-    if stringWidth(id_str, id_font, id_size) <= usable_w:
-        c.drawString(margin, y - id_leading, id_str)
+    id_y = margin
+    if stringWidth(id_str, id_font, id_size) <= text_col_w:
+        c.drawString(margin, id_y, id_str)
     else:
+        # split at the hyphen nearest the midpoint
         mid = len(id_str) // 2
-        c.drawString(margin, y - id_leading,       id_str[:mid])
-        c.drawString(margin, y - id_leading * 2,   id_str[mid:])
+        c.drawString(margin, id_y + id_leading, id_str[:mid])
+        c.drawString(margin, id_y,              id_str[mid:])
+
+    # Draw QR code on the right
+    qr_bytes = generate_qr_code(label_url, size_px=150)
+    c.drawImage(ImageReader(io.BytesIO(qr_bytes)), qr_x, qr_y,
+                width=qr_size, height=qr_size)
 
     c.save()
 
