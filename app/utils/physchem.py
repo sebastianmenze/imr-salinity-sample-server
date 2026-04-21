@@ -35,14 +35,19 @@ def _parse_json(r: httpx.Response) -> object:
         )
 
 
-def _operation_score(op: dict, utc_time: datetime, latitude: float, longitude: float) -> float:
+def _operation_score(
+    op: dict,
+    utc_time: Optional[datetime],
+    latitude: Optional[float],
+    longitude: Optional[float],
+) -> float:
     """
     Lower is better. Primary: time difference in hours. Secondary: distance in degrees.
     Uses OperationDTO field names: timeStart, latitudeStart, longitudeStart.
     """
     time_diff_h = float("inf")
     val = op.get("timeStart")
-    if val:
+    if val and utc_time is not None:
         try:
             op_time = datetime.fromisoformat(val.replace("Z", "+00:00")).replace(tzinfo=None)
             time_diff_h = abs((utc_time - op_time).total_seconds()) / 3600
@@ -52,7 +57,7 @@ def _operation_score(op: dict, utc_time: datetime, latitude: float, longitude: f
     dist_deg = 0.0
     op_lat = op.get("latitudeStart")
     op_lon = op.get("longitudeStart")
-    if op_lat is not None and op_lon is not None:
+    if op_lat is not None and op_lon is not None and latitude is not None and longitude is not None:
         dist_deg = math.sqrt((float(op_lat) - latitude) ** 2 + (float(op_lon) - longitude) ** 2)
 
     return time_diff_h + dist_deg
@@ -125,10 +130,10 @@ class PhysChemClient:
         )
         return best
 
-    async def create_instrument(self, operation_id: int) -> dict:
+    async def create_instrument(self, operation_id: int, sample_id: str) -> dict:
         payload = {
             "instrumentType": "BOT",
-            "instrumentSerialNumber": "salinometer",
+            "instrumentSerialNumber": sample_id,
         }
         async with httpx.AsyncClient(timeout=30) as client:
             logger.info(f"POST /operation/{operation_id}/instrument payload: {payload}")
@@ -224,7 +229,7 @@ class PhysChemClient:
             operation_id = operation["id"]
             logger.info(f"PhysChem operation {operation_id}")
 
-            instrument = await self.create_instrument(operation_id)
+            instrument = await self.create_instrument(operation_id, sample_id)
             instrument_id = instrument["id"]
             logger.info(f"Created PhysChem instrument {instrument_id}")
 
