@@ -1,10 +1,10 @@
 """
-PhysChem API client — https://physchem-api.hi.no
+PhysChem API client — https://physchem-api-test.hi.no
 
 Upload flow for each lab measurement:
   1. GET /mission/list?cruise=...           → find the mission by cruise ID
   2. GET /mission/{id}/operation/list       → find the CTD cast by UTC time + position
-  3. POST /operation/{id}/instrument        → create a salinometer (BTL) instrument
+  3. GET /operation/{id}/instrument/list    → find existing BOT instrument (never create)
   4. POST /instrument/{id}/parameter        → add PSAL_LAB parameter
   5. POST /parameter/{id}/reading           → store the measured salinity value
 """
@@ -41,10 +41,7 @@ def _operation_score(
     latitude: Optional[float],
     longitude: Optional[float],
 ) -> float:
-    """
-    Lower is better. Primary: time difference in hours. Secondary: distance in degrees.
-    Uses OperationDTO field names: timeStart, latitudeStart, longitudeStart.
-    """
+    """Lower is better. Primary: time diff in hours. Secondary: position distance in degrees."""
     time_diff_h = float("inf")
     val = op.get("timeStart")
     if val and utc_time is not None:
@@ -100,9 +97,9 @@ class PhysChemClient:
     async def find_operation(
         self,
         mission_id: int,
-        utc_time: datetime,
-        latitude: float,
-        longitude: float,
+        utc_time: Optional[datetime],
+        latitude: Optional[float],
+        longitude: Optional[float],
     ) -> Optional[dict]:
         """Find the CTD operation closest in time and position to the sample."""
         async with httpx.AsyncClient(timeout=30) as client:
@@ -111,9 +108,7 @@ class PhysChemClient:
                 params={"extend": "false", "instrumentTypeList": "false"},
                 headers=self._headers(),
             )
-            logger.info(
-                f"GET /mission/{mission_id}/operation/list → {r.status_code}: {r.text[:500]}"
-            )
+            logger.info(f"GET /mission/{mission_id}/operation/list → {r.status_code}: {r.text[:500]}")
             r.raise_for_status()
             operations = _parse_json(r)
 
@@ -125,26 +120,28 @@ class PhysChemClient:
         score = _operation_score(best, utc_time, latitude, longitude)
         logger.info(
             f"Best matching operation: id={best.get('id')} "
-            f"op#={best.get('operationNumber')} score={score:.3f} "
-            f"(time+dist; lower=better)"
+            f"op#={best.get('operationNumber')} score={score:.3f}"
         )
         return best
 
-    async def create_instrument(self, operation_id: int, sample_id: str) -> dict:
-        payload = {
-            "instrumentType": "BOT",
-            "instrumentSerialNumber": sample_id,
-        }
+    async def find_bot_instrument(self, operation_id: int) -> Optional[dict]:
+        """Find the existing BOT instrument on a CTD operation."""
         async with httpx.AsyncClient(timeout=30) as client:
-            logger.info(f"POST /operation/{operation_id}/instrument payload: {payload}")
-            r = await client.post(
-                f"{self.base_url}/operation/{operation_id}/instrument",
-                json=payload,
+            r = await client.get(
+                f"{self.base_url}/operation/{operation_id}/instrument/list",
                 headers=self._headers(),
             )
-            logger.info(f"POST /operation/{operation_id}/instrument → {r.status_code}: {r.text[:500]}")
+            logger.info(f"GET /operation/{operation_id}/instrument/list → {r.status_code}: {r.text[:300]}")
             r.raise_for_status()
-            return _parse_json(r)
+            instruments = _parse_json(r)
+
+        for inst in instruments:
+            if inst.get("instrumentType") == "BOT":
+                logger.info(f"Found BOT instrument {inst['id']} on operation {operation_id}")
+                return inst
+
+        logger.warning(f"No BOT instrument found on operation {operation_id}")
+        return None
 
     async def create_parameter(self, instrument_id: int) -> dict:
         payload = {
@@ -191,9 +188,9 @@ class PhysChemClient:
     async def upload_measurement(
         self,
         sample_id: str,
-        utc_time: datetime,
-        latitude: float,
-        longitude: float,
+        utc_time: Optional[datetime],
+        latitude: Optional[float],
+        longitude: Optional[float],
         depth_m: float,
         platform_id: str,
         psal_lab: float,
@@ -210,6 +207,9 @@ class PhysChemClient:
                 return {"success": False, "message": "PhysChem API URL not set"}
             return {"success": False, "message": "PhysChem token not set or expired — paste a new token on the measure page"}
 
+        if utc_time is None:
+            return {"success": False, "message": "Sample has no UTC timestamp — edit the BTL table to add one before uploading"}
+
         if not cruise_id:
             return {"success": False, "message": "cruise_id required for PhysChem upload"}
 
@@ -218,24 +218,22 @@ class PhysChemClient:
             if not mission:
                 return {"success": False, "message": f"No PhysChem mission found for cruise '{cruise_id}'"}
             mission_id = mission["id"]
-            logger.info(f"PhysChem mission {mission_id} ({mission.get('missionName')}) for cruise {cruise_id}")
+            logger.info(f"PhysChem mission {mission_id} for cruise {cruise_id}")
 
             operation = await self.find_operation(mission_id, utc_time, latitude, longitude)
             if not operation:
-                return {
-                    "success": False,
-                    "message": f"No matching operation found in PhysChem mission {mission_id}",
-                }
+                return {"success": False, "message": f"No matching CTD operation found in PhysChem mission {mission_id}"}
             operation_id = operation["id"]
             logger.info(f"PhysChem operation {operation_id}")
 
-            instrument = await self.create_instrument(operation_id, sample_id)
+            instrument = await self.find_bot_instrument(operation_id)
+            if not instrument:
+                return {"success": False, "message": f"No BOT instrument found on PhysChem operation {operation_id} — ensure the CTD cast has bottle data in PhysChem"}
             instrument_id = instrument["id"]
-            logger.info(f"Created PhysChem instrument {instrument_id}")
 
             parameter = await self.create_parameter(instrument_id)
             parameter_id = parameter["id"]
-            logger.info(f"Created PhysChem parameter {parameter_id}")
+            logger.info(f"Created PhysChem PSAL_LAB parameter {parameter_id}")
 
             sample_num = 1
             if bottle_number:
@@ -258,6 +256,7 @@ class PhysChemClient:
                 "upload_id": str(reading_id),
                 "mission_id": mission_id,
                 "operation_id": operation_id,
+                "instrument_id": instrument_id,
                 "parameter_id": parameter_id,
                 "reading_id": reading_id,
             }

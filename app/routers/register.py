@@ -128,16 +128,21 @@ async def register_bot_confirm(
 
     bottles = json.loads(bottles_json)
     selected_set = set(selected)
+    # Pre-validate: at least one selected bottle must have a timestamp
+    if not any(b.get("utc_time") for b in bottles if str(b["idx"]) in selected_set):
+        raise HTTPException(status_code=400, detail="All selected bottles are missing UTC timestamps. Edit the table to add timestamps before registering.")
 
     samples = []
+    skipped = 0
     for bottle in bottles:
         if str(bottle["idx"]) not in selected_set:
             continue
 
-        utc_time = (
-            datetime.fromisoformat(bottle["utc_time"])
-            if bottle.get("utc_time") else datetime.utcnow()
-        )
+        if not bottle.get("utc_time"):
+            skipped += 1
+            continue
+
+        utc_time = datetime.fromisoformat(bottle["utc_time"])
 
         sample = SalinitySample(
             id=uuid.uuid4(),
