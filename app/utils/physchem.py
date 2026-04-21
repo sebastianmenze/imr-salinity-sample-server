@@ -229,26 +229,48 @@ class PhysChemClient:
         )
         return best["sampleNumber"]
 
-    async def create_reading(
+    async def upsert_reading(
         self,
         parameter_id: int,
         psal_value: float,
         sample_number: int,
         value_datetime: datetime,
     ) -> dict:
+        """PUT to update an existing reading for sample_number, or POST to create one."""
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.get(
+                f"{self.base_url}/parameter/{parameter_id}/reading/list",
+                headers=self._headers(),
+            )
+            logger.info(f"GET /parameter/{parameter_id}/reading/list → {r.status_code}: {r.text[:500]}")
+            r.raise_for_status()
+            readings = _parse_json(r)
+
+        existing = next((rd for rd in readings if rd.get("sampleNumber") == sample_number), None)
+
         payload = {
             "sampleNumber": sample_number,
             "valueDateTime": value_datetime.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "valueDec": psal_value,
             "quality": "1",
         }
+
         async with httpx.AsyncClient(timeout=30) as client:
-            r = await client.post(
-                f"{self.base_url}/parameter/{parameter_id}/reading",
-                json=payload,
-                headers=self._headers(),
-            )
-            logger.info(f"POST /parameter/{parameter_id}/reading → {r.status_code}: {r.text[:500]}")
+            if existing:
+                reading_id = existing["id"]
+                r = await client.put(
+                    f"{self.base_url}/reading/{reading_id}",
+                    json=payload,
+                    headers=self._headers(),
+                )
+                logger.info(f"PUT /reading/{reading_id} → {r.status_code}: {r.text[:500]}")
+            else:
+                r = await client.post(
+                    f"{self.base_url}/parameter/{parameter_id}/reading",
+                    json=payload,
+                    headers=self._headers(),
+                )
+                logger.info(f"POST /parameter/{parameter_id}/reading → {r.status_code}: {r.text[:500]}")
             r.raise_for_status()
             return _parse_json(r)
 
@@ -312,7 +334,7 @@ class PhysChemClient:
                         pass
                 logger.info(f"Depth match unavailable, using bottle_number as sampleNumber: {sample_num}")
 
-            reading = await self.create_reading(
+            reading = await self.upsert_reading(
                 parameter_id=parameter_id,
                 psal_value=psal_lab,
                 sample_number=sample_num,
