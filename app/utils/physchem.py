@@ -156,15 +156,15 @@ class PhysChemClient:
             params = _parse_json(r)
 
         for p in params:
-            if p.get("suppliedParameterName") == "PSAL_LAB":
-                logger.info(f"Reusing existing PSAL_LAB parameter {p['id']} on instrument {instrument_id}")
+            if p.get("suppliedParameterName") == "S LAB":
+                logger.info(f"Reusing existing S LAB parameter {p['id']} on instrument {instrument_id}")
                 return p
 
         # None found — create one (ordinal=1 for PSAL_LAB which is a distinct code)
         payload = {
             "parameterCode": "PSAL_LAB",
             "ordinal": 1,
-            "suppliedParameterName": "PSAL_LAB",
+            "suppliedParameterName": "S LAB",
             "units": "PSU",
             "processingLevel": "L0",
             "acquirementMethod": "1019900",
