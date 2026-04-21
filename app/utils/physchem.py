@@ -201,7 +201,9 @@ class PhysChemClient:
         notes: Optional[str] = None,
     ) -> dict:
         if not self.is_configured():
-            return {"success": False, "message": "PhysChem not configured (no token or URL)"}
+            if not self.base_url.startswith("http"):
+                return {"success": False, "message": "PhysChem API URL not set"}
+            return {"success": False, "message": "PhysChem token not set or expired — paste a new token on the measure page"}
 
         if not cruise_id:
             return {"success": False, "message": "cruise_id required for PhysChem upload"}
