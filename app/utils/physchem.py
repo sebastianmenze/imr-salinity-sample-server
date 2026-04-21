@@ -37,23 +37,21 @@ def _parse_json(r: httpx.Response) -> object:
 
 def _operation_score(op: dict, utc_time: datetime, latitude: float, longitude: float) -> float:
     """
-    Lower is better. Primary: time difference in hours. Secondary: great-circle distance in degrees.
-    Tries common PhysChem field name variants for datetime and position.
+    Lower is better. Primary: time difference in hours. Secondary: distance in degrees.
+    Uses OperationDTO field names: timeStart, latitudeStart, longitudeStart.
     """
     time_diff_h = float("inf")
-    for key in ("startDateTime", "dateTime", "operationDateTime", "stopDateTime"):
-        val = op.get(key)
-        if val:
-            try:
-                op_time = datetime.fromisoformat(val.replace("Z", "+00:00")).replace(tzinfo=None)
-                time_diff_h = abs((utc_time - op_time).total_seconds()) / 3600
-                break
-            except Exception:
-                continue
+    val = op.get("timeStart")
+    if val:
+        try:
+            op_time = datetime.fromisoformat(val.replace("Z", "+00:00")).replace(tzinfo=None)
+            time_diff_h = abs((utc_time - op_time).total_seconds()) / 3600
+        except Exception:
+            pass
 
     dist_deg = 0.0
-    op_lat = op.get("startLatitude") or op.get("latitude") or op.get("decimalLatitude")
-    op_lon = op.get("startLongitude") or op.get("longitude") or op.get("decimalLongitude")
+    op_lat = op.get("latitudeStart")
+    op_lon = op.get("longitudeStart")
     if op_lat is not None and op_lon is not None:
         dist_deg = math.sqrt((float(op_lat) - latitude) ** 2 + (float(op_lon) - longitude) ** 2)
 
