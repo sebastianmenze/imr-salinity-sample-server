@@ -47,7 +47,8 @@ def _operation_score(
     if val and utc_time is not None:
         try:
             op_time = datetime.fromisoformat(val.replace("Z", "+00:00")).replace(tzinfo=None)
-            time_diff_h = abs((utc_time - op_time).total_seconds()) / 3600
+            sample_time = utc_time.replace(tzinfo=None) if utc_time.tzinfo else utc_time
+            time_diff_h = abs((sample_time - op_time).total_seconds()) / 3600
         except Exception:
             pass
 
