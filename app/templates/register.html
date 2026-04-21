@@ -57,11 +57,13 @@
             <input type="number" name="depth_m" step="0.1" placeholder="5.0" required>
 
             <label>Platform</label>
-            <select name="platform_id" required>
+            <input type="text" name="platform_id" list="platform-list"
+                   placeholder="e.g. G.O. Sars" autocomplete="off" required>
+            <datalist id="platform-list">
                 {% for p in platforms %}
-                <option>{{ p }}</option>
+                <option value="{{ p }}">
                 {% endfor %}
-            </select>
+            </datalist>
 
             <label>Cruise ID (optional)</label>
             <input type="text" name="cruise_id" placeholder="e.g. 2025001014">
