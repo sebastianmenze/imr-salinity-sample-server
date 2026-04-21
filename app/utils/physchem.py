@@ -129,17 +129,15 @@ class PhysChemClient:
         payload = {
             "instrumentType": "BTL",
             "instrumentSerialNumber": "salinometer",
-            "instrumentModel": "Autosal salinometer",
-            "equipment": "Salinometer",
-            "instrumentDataOwner": "IMR",
         }
         async with httpx.AsyncClient(timeout=30) as client:
+            logger.info(f"POST /operation/{operation_id}/instrument payload: {payload}")
             r = await client.post(
                 f"{self.base_url}/operation/{operation_id}/instrument",
                 json=payload,
                 headers=self._headers(),
             )
-            logger.info(f"POST /operation/{operation_id}/instrument → {r.status_code}: {r.text[:300]}")
+            logger.info(f"POST /operation/{operation_id}/instrument → {r.status_code}: {r.text[:500]}")
             r.raise_for_status()
             return _parse_json(r)
 
