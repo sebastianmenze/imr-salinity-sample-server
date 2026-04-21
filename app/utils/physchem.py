@@ -26,7 +26,9 @@ class PhysChemClient:
         self.api_key = settings.physchem_api_key
 
     def is_configured(self) -> bool:
-        return azure_auth.is_authenticated() or bool(self.api_key)
+        has_token = azure_auth.is_authenticated() or bool(self.api_key)
+        has_url = self.base_url.startswith("http")
+        return has_token and has_url
 
     def _headers(self) -> dict:
         token = azure_auth.get_access_token() or self.api_key

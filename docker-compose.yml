@@ -7,13 +7,14 @@ services:
       - DATABASE_URL=postgresql://salinity:salinity@db:5432/salinity
       - BASE_URL=${BASE_URL:-http://localhost:8000}
       - SECRET_KEY=${SECRET_KEY:-changeme-in-production}
-      - PHYSCHEM_API_URL=${PHYSCHEM_API_URL:-}
+      - PHYSCHEM_API_URL=${PHYSCHEM_API_URL:-https://physchem-editor-test.hi.no}
       - PHYSCHEM_API_KEY=${PHYSCHEM_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./labels:/app/labels
+      - ./data:/data
     restart: unless-stopped
 
   db:
