@@ -168,7 +168,6 @@ class PhysChemClient:
             "suppliedParameterName": "PSAL_LAB",
             "units": "PSU",
             "suppliedUnits": "PSU",
-            "acquirementMethod": "discrete bottle salinometer",
         }
         async with httpx.AsyncClient(timeout=30) as client:
             r = await client.post(
@@ -176,7 +175,7 @@ class PhysChemClient:
                 json=payload,
                 headers=self._headers(),
             )
-            logger.info(f"POST /instrument/{instrument_id}/parameter → {r.status_code}: {r.text[:300]}")
+            logger.info(f"POST /instrument/{instrument_id}/parameter → {r.status_code}: {r.text[:500]}")
             r.raise_for_status()
             return _parse_json(r)
 
@@ -199,7 +198,7 @@ class PhysChemClient:
                 json=payload,
                 headers=self._headers(),
             )
-            logger.info(f"POST /parameter/{parameter_id}/reading → {r.status_code}: {r.text[:300]}")
+            logger.info(f"POST /parameter/{parameter_id}/reading → {r.status_code}: {r.text[:500]}")
             r.raise_for_status()
             return _parse_json(r)
 
