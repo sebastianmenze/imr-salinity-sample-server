@@ -236,7 +236,7 @@ class PhysChemClient:
         sample_number: int,
         value_datetime: datetime,
     ) -> dict:
-        """PUT to update an existing reading for sample_number, or POST to create one."""
+        """Create a reading for sample_number; skip if one already exists."""
         async with httpx.AsyncClient(timeout=30) as client:
             r = await client.get(
                 f"{self.base_url}/parameter/{parameter_id}/reading/list",
@@ -247,6 +247,12 @@ class PhysChemClient:
             readings = _parse_json(r)
 
         existing = next((rd for rd in readings if rd.get("sampleNumber") == sample_number), None)
+        if existing:
+            logger.warning(
+                f"Reading already exists for parameter {parameter_id} sampleNumber {sample_number} "
+                f"(id={existing['id']}, valueDec={existing.get('valueDec')}) — not overwriting"
+            )
+            return existing
 
         payload = {
             "sampleNumber": sample_number,
@@ -254,23 +260,13 @@ class PhysChemClient:
             "valueDec": psal_value,
             "quality": "1",
         }
-
         async with httpx.AsyncClient(timeout=30) as client:
-            if existing:
-                reading_id = existing["id"]
-                r = await client.put(
-                    f"{self.base_url}/reading/{reading_id}",
-                    json=payload,
-                    headers=self._headers(),
-                )
-                logger.info(f"PUT /reading/{reading_id} → {r.status_code}: {r.text[:500]}")
-            else:
-                r = await client.post(
-                    f"{self.base_url}/parameter/{parameter_id}/reading",
-                    json=payload,
-                    headers=self._headers(),
-                )
-                logger.info(f"POST /parameter/{parameter_id}/reading → {r.status_code}: {r.text[:500]}")
+            r = await client.post(
+                f"{self.base_url}/parameter/{parameter_id}/reading",
+                json=payload,
+                headers=self._headers(),
+            )
+            logger.info(f"POST /parameter/{parameter_id}/reading → {r.status_code}: {r.text[:500]}")
             r.raise_for_status()
             return _parse_json(r)
 
