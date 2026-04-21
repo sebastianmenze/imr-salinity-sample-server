@@ -180,6 +180,44 @@ class PhysChemClient:
             r.raise_for_status()
             return _parse_json(r)
 
+    async def find_sample_number_by_depth(
+        self, instrument_id: int, depth_m: float
+    ) -> Optional[int]:
+        """Match depth_m to a sampleNumber via PRES readings on the BOT instrument."""
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.get(
+                f"{self.base_url}/instrument/{instrument_id}/parameter/list",
+                headers=self._headers(),
+            )
+            r.raise_for_status()
+            params = _parse_json(r)
+
+        pres_param = next((p for p in params if p.get("parameterCode") == "PRES"), None)
+        if not pres_param:
+            logger.warning(f"No PRES parameter on instrument {instrument_id}, cannot match by depth")
+            return None
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.get(
+                f"{self.base_url}/parameter/{pres_param['id']}/reading/list",
+                headers=self._headers(),
+            )
+            logger.info(f"GET /parameter/{pres_param['id']}/reading/list → {r.status_code}: {r.text[:500]}")
+            r.raise_for_status()
+            readings = _parse_json(r)
+
+        if not readings:
+            logger.warning(f"No PRES readings on instrument {instrument_id}, cannot match by depth")
+            return None
+
+        best = min(readings, key=lambda rd: abs(float(rd.get("valueDec", 0)) - depth_m))
+        diff = abs(float(best.get("valueDec", 0)) - depth_m)
+        logger.info(
+            f"Depth match: {depth_m}m → sampleNumber={best['sampleNumber']} "
+            f"at {best.get('valueDec')}dbar (diff={diff:.1f}m)"
+        )
+        return best["sampleNumber"]
+
     async def create_reading(
         self,
         parameter_id: int,
@@ -253,12 +291,15 @@ class PhysChemClient:
             parameter_id = parameter["id"]
             logger.info(f"Using PhysChem PSAL parameter {parameter_id}")
 
-            sample_num = 1
-            if bottle_number:
-                try:
-                    sample_num = int(bottle_number)
-                except ValueError:
-                    pass
+            sample_num = await self.find_sample_number_by_depth(instrument_id, depth_m)
+            if sample_num is None:
+                sample_num = 1
+                if bottle_number:
+                    try:
+                        sample_num = int(bottle_number)
+                    except ValueError:
+                        pass
+                logger.info(f"Depth match unavailable, using bottle_number as sampleNumber: {sample_num}")
 
             reading = await self.create_reading(
                 parameter_id=parameter_id,
