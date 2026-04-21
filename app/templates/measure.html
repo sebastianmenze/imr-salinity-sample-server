@@ -82,6 +82,12 @@
 <div class="alert alert-success">
     ✅ This sample has already been uploaded to PhysChem (PSAL_LAB: {{ "%.4f"|format(sample.psal_lab) }}).
 </div>
+{% elif sample.status.value == 'measured' %}
+<div class="alert alert-success">
+    ✅ Measurement already recorded — PSAL_LAB: <strong>{{ "%.4f"|format(sample.psal_lab) }}</strong>
+    {% if sample.measured_by %} — measured by {{ sample.measured_by }}{% endif %}
+    {% if sample.notes %}<br><em>Notes: {{ sample.notes }}</em>{% endif %}
+</div>
 {% else %}
 <div class="card">
     <h2>⚗️ Enter Lab Measurement</h2>
