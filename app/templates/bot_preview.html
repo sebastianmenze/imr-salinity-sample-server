@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Select Bottles — IMR Salinity Tracker{% endblock %}
+{% block subtitle %}BTL File — Select Bottles{% endblock %}
+{% block content %}
+
+<style>
+.meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.meta-pill {
+    background: #f7fafc; border: 1px solid #e2e8f0;
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 0.8rem; color: #4a5568;
+}
+.meta-pill strong { color: #1a202c; }
+
+.bottle-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.bottle-table th {
+    background: #f7fafc; padding: 8px 10px;
+    text-align: left; border-bottom: 2px solid #e2e8f0;
+    font-size: 0.75rem; color: #4a5568; font-weight: 700;
+    white-space: nowrap;
+}
+.bottle-table td { padding: 9px 10px; border-bottom: 1px solid #f0f4f8; }
+.bottle-table tr:hover td { background: #f7fafc; }
+.bottle-table td:first-child { width: 36px; text-align: center; }
+
+input[type="checkbox"] {
+    width: 18px; height: 18px; cursor: pointer; accent-color: #003366;
+}
+
+.count-badge {
+    display: inline-block; background: #003366; color: white;
+    border-radius: 12px; padding: 1px 8px; font-size: 0.75rem;
+    margin-left: 6px; font-weight: 700;
+}
+
+.btn-register {
+    background: #003366; color: white; width: 100%;
+    margin-top: 16px; font-size: 1rem; padding: 14px;
+    border: none; border-radius: 8px; font-weight: 600; cursor: pointer;
+}
+.btn-register:hover { background: #004080; }
+.btn-register:disabled { background: #a0aec0; cursor: not-allowed; }
+</style>
+
+<div class="card">
+    <h2>📄 {{ filename }}</h2>
+
+    <!-- Metadata pills -->
+    <div class="meta-row">
+        {% if bot.platform_name %}
+        <span class="meta-pill"><strong>Platform:</strong> {{ bot.platform_name }}</span>
+        {% endif %}
+        {% if bot.cruise_id %}
+        <span class="meta-pill"><strong>Cruise:</strong> {{ bot.cruise_id }}</span>
+        {% endif %}
+        {% if bot.cast_number %}
+        <span class="meta-pill"><strong>Station:</strong> {{ bot.cast_number }}</span>
+        {% endif %}
+        {% if bot.start_time %}
+        <span class="meta-pill"><strong>Time:</strong> {{ bot.start_time.strftime('%Y-%m-%d %H:%M') }} UTC</span>
+        {% endif %}
+        {% if bot.latitude %}
+        <span class="meta-pill"><strong>Lat:</strong> {{ "%.4f"|format(bot.latitude) }}°</span>
+        {% endif %}
+        {% if bot.longitude %}
+        <span class="meta-pill"><strong>Lon:</strong> {{ "%.4f"|format(bot.longitude) }}°</span>
+        {% endif %}
+    </div>
+
+    <!-- Bottle selection table -->
+    <form method="post" action="/register/bot/confirm" id="confirm-form">
+        <input type="hidden" name="bottles_json" value="{{ bottles_json | e }}">
+        <input type="hidden" name="platform_name" value="{{ bot.platform_name or '' }}">
+        <input type="hidden" name="cruise_id" value="{{ bot.cruise_id or '' }}">
+        <input type="hidden" name="cast_number" value="{{ bot.cast_number or '' }}">
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+            <div style="font-size:0.85rem; font-weight:600; color:#2d3748">
+                Select bottles to register
+                <span class="count-badge" id="sel-count">{{ bottles|length }}</span>
+            </div>
+            <label style="font-size:0.8rem; color:#4a5568; cursor:pointer; display:flex; align-items:center; gap:6px; margin:0">
+                <input type="checkbox" id="select-all" checked> Select all
+            </label>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table class="bottle-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Bottle #</th>
+                        <th>Depth (m)</th>
+                        <th>PSAL 1</th>
+                        <th>PSAL 2</th>
+                        <th>Diff</th>
+                        <th>Time (UTC)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for b in bottles %}
+                <tr>
+                    <td>
+                        <input type="checkbox" class="bottle-cb" name="selected" value="{{ b.idx }}" checked>
+                    </td>
+                    <td><strong>{{ b.bottle_number or loop.index }}</strong></td>
+                    <td>{{ "%.1f"|format(b.depth_m) }}</td>
+                    <td>{% if b.psal_1 %}{{ "%.4f"|format(b.psal_1) }}{% else %}—{% endif %}</td>
+                    <td>{% if b.psal_2 %}{{ "%.4f"|format(b.psal_2) }}{% else %}—{% endif %}</td>
+                    <td>
+                        {% if b.psal_1 and b.psal_2 %}
+                        {% set diff = (b.psal_1 - b.psal_2)|abs %}
+                        <span style="color:{{ '#c53030' if diff > 0.01 else '#276749' }}">
+                            {{ "%.4f"|format(diff) }}
+                        </span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td style="font-size:0.78rem; color:#718096">
+                        {% if b.utc_time %}{{ b.utc_time[:16].replace('T',' ') }}{% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <button type="submit" class="btn-register" id="reg-btn">
+            📝 Register <span id="reg-count">{{ bottles|length }}</span> Selected Sample(s)
+        </button>
+    </form>
+</div>
+
+<a href="/" style="display:block; text-align:center; margin-top:8px; font-size:0.85rem; color:#718096">
+    ← Upload a different file
+</a>
+
+<script>
+(function () {
+    const allCb   = document.getElementById('select-all');
+    const cbs     = document.querySelectorAll('.bottle-cb');
+    const badge   = document.getElementById('sel-count');
+    const regBtn  = document.getElementById('reg-btn');
+    const regCount = document.getElementById('reg-count');
+
+    function updateCount() {
+        const n = document.querySelectorAll('.bottle-cb:checked').length;
+        badge.textContent = n;
+        regCount.textContent = n;
+        regBtn.disabled = n === 0;
+        allCb.indeterminate = n > 0 && n < cbs.length;
+        allCb.checked = n === cbs.length;
+    }
+
+    allCb.addEventListener('change', () => {
+        cbs.forEach(cb => cb.checked = allCb.checked);
+        updateCount();
+    });
+
+    cbs.forEach(cb => cb.addEventListener('change', updateCount));
+
+    updateCount();
+})();
+</script>
+{% endblock %}

@@ -3,11 +3,38 @@
 {% block subtitle %}Shipboard Sample Registration{% endblock %}
 {% block content %}
 
+<style>
+.drop-zone {
+    border: 2px dashed #cbd5e0;
+    border-radius: 10px;
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #f7fafc;
+    margin-top: 8px;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+    border-color: #003366;
+    background: #ebf8ff;
+}
+.drop-zone.has-file {
+    border-color: #38a169;
+    background: #f0fff4;
+}
+.drop-icon { font-size: 2.2rem; margin-bottom: 8px; }
+.drop-label { font-weight: 600; font-size: 0.95rem; color: #2d3748; }
+.drop-sub { font-size: 0.8rem; color: #718096; margin-top: 4px; }
+.drop-filename { font-size: 0.85rem; color: #276749; font-weight: 600; margin-top: 6px; }
+.spinner { display: none; text-align: center; padding: 24px; color: #4a5568; }
+</style>
+
 <div class="tab-bar">
     <button class="tab active" id="tab-manual" onclick="showTab('manual')">✏️ Manual Entry</button>
-    <button class="tab" id="tab-bot" onclick="showTab('bot')">📁 BOT File</button>
+    <button class="tab" id="tab-bot" onclick="showTab('bot')">📁 BTL File</button>
 </div>
 
+<!-- Manual Entry Form -->
 <div id="panel-manual">
     <div class="card">
         <h2>Sample Metadata</h2>
@@ -37,7 +64,7 @@
             </select>
 
             <label>Cruise ID (optional)</label>
-            <input type="text" name="cruise_id" placeholder="e.g. 2025107">
+            <input type="text" name="cruise_id" placeholder="e.g. 2025001014">
 
             <label>Station ID (optional)</label>
             <input type="text" name="station_id" placeholder="e.g. Station 42">
@@ -62,50 +89,80 @@
     </div>
 </div>
 
+<!-- BTL File Upload -->
 <div id="panel-bot" style="display:none">
     <div class="card">
         <h2>Upload Seabird BTL File</h2>
-        <div class="alert alert-info">
-            Upload a <code>.btl</code> file to register all bottle closures from a CTD cast at once.
-            Position, cruise, and platform are read automatically from the file header.
-        </div>
-        <form method="post" action="/register/bot" enctype="multipart/form-data">
-            <label>BTL File</label>
-            <input type="file" name="bot_file" accept=".btl,.bot,.txt" required>
-
-            <label>Platform override <span style="font-weight:400;color:#718096">(auto-detected from file)</span></label>
-            <select name="platform_id">
-                <option value="">— use value from file —</option>
-                {% for p in platforms %}
-                <option>{{ p }}</option>
-                {% endfor %}
-            </select>
-
-            <label>Cruise ID override <span style="font-weight:400;color:#718096">(auto-detected from file)</span></label>
-            <input type="text" name="cruise_id" placeholder="e.g. 2025001014 (leave blank to use file value)">
-
-            <div class="meta-grid">
-                <div>
-                    <label>Latitude override <span style="font-weight:400;color:#718096">(optional)</span></label>
-                    <input type="number" name="latitude" step="0.0001" placeholder="auto from file">
-                </div>
-                <div>
-                    <label>Longitude override <span style="font-weight:400;color:#718096">(optional)</span></label>
-                    <input type="number" name="longitude" step="0.0001" placeholder="auto from file">
-                </div>
+        <form id="bot-form" method="post" action="/register/bot/preview" enctype="multipart/form-data">
+            <input type="file" id="bot_file" name="bot_file" accept=".btl,.bot,.txt" style="display:none">
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-icon">📁</div>
+                <div class="drop-label">Drop BTL file here</div>
+                <div class="drop-sub">or click to browse</div>
+                <div class="drop-filename" id="drop-filename" style="display:none"></div>
             </div>
-
-            <button type="submit" class="btn btn-primary">📁 Parse BTL &amp; Register All Samples</button>
         </form>
+        <div class="spinner" id="spinner">
+            <div style="font-size:1.5rem">⏳</div>
+            <div style="margin-top:6px">Parsing file…</div>
+        </div>
+        <div class="alert alert-info" style="margin-top:12px; font-size:0.82rem">
+            Position, cruise, platform and salinity values are read automatically from the file.
+        </div>
     </div>
 </div>
 
 <script>
 function showTab(name) {
     document.getElementById('panel-manual').style.display = name === 'manual' ? 'block' : 'none';
-    document.getElementById('panel-bot').style.display = name === 'bot' ? 'block' : 'none';
+    document.getElementById('panel-bot').style.display   = name === 'bot'    ? 'block' : 'none';
     document.getElementById('tab-manual').className = 'tab' + (name === 'manual' ? ' active' : '');
-    document.getElementById('tab-bot').className = 'tab' + (name === 'bot' ? ' active' : '');
+    document.getElementById('tab-bot').className   = 'tab' + (name === 'bot'    ? ' active' : '');
 }
+
+(function () {
+    const zone     = document.getElementById('drop-zone');
+    const input    = document.getElementById('bot_file');
+    const form     = document.getElementById('bot-form');
+    const label    = document.getElementById('drop-filename');
+    const spinner  = document.getElementById('spinner');
+
+    function submitFile(file) {
+        if (!file) return;
+        // Show filename
+        label.textContent = '📄 ' + file.name;
+        label.style.display = 'block';
+        zone.classList.add('has-file');
+        zone.classList.remove('drag-over');
+        // Show spinner, hide drop zone content
+        spinner.style.display = 'block';
+        zone.style.opacity = '0.4';
+        form.submit();
+    }
+
+    zone.addEventListener('click', () => input.click());
+
+    zone.addEventListener('dragover', e => {
+        e.preventDefault();
+        zone.classList.add('drag-over');
+    });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+
+    zone.addEventListener('drop', e => {
+        e.preventDefault();
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            // Assign to input so FormData picks it up
+            const dt = new DataTransfer();
+            dt.items.add(files[0]);
+            input.files = dt.files;
+            submitFile(files[0]);
+        }
+    });
+
+    input.addEventListener('change', () => {
+        if (input.files.length > 0) submitFile(input.files[0]);
+    });
+})();
 </script>
 {% endblock %}
