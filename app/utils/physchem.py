@@ -127,7 +127,7 @@ class PhysChemClient:
 
     async def create_instrument(self, operation_id: int) -> dict:
         payload = {
-            "instrumentType": "BTL",
+            "instrumentType": "BOT",
             "instrumentSerialNumber": "salinometer",
         }
         async with httpx.AsyncClient(timeout=30) as client:
