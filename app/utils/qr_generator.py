@@ -119,7 +119,7 @@ def generate_label_pdf(
         ("RIGHTPADDING", (0, 0), (-1, -1), 0),
     ])
 
-    id_para = Paragraph(f"ID: {str(sample_id)[:8]}…", micro)
+    id_para = Paragraph(f"ID: {sample_id}", micro)
 
     doc.build([table, id_para])
 
