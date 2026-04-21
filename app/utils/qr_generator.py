@@ -3,7 +3,7 @@ QR code and label PDF generator.
 
 Generates a printable label (PDF) for each salinity sample containing
 human-readable metadata and a QR code linking to the lab measurement URL.
-Label size: 62mm × 40mm (Brother QL format).
+Label size: 30mm × 50mm (Phomemo M110 format).
 """
 
 import qrcode
@@ -12,7 +12,7 @@ import os
 from reportlab.lib.pagesizes import mm
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Table
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
 from reportlab.lib.units import mm as rl_mm
 from PIL import Image as PILImage
 from datetime import datetime
@@ -21,8 +21,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-LABEL_WIDTH_MM = 62
-LABEL_HEIGHT_MM = 40
+LABEL_WIDTH_MM = 30
+LABEL_HEIGHT_MM = 50
 
 
 def generate_qr_code(url: str, size_px: int = 200) -> bytes:
@@ -58,7 +58,7 @@ def generate_label_pdf(
     output_path: Optional[str] = None,
 ) -> bytes:
     """
-    Generate a 62mm × 40mm label PDF for a salinity sample.
+    Generate a 30mm × 50mm label PDF for a salinity sample (Phomemo M110).
     Returns the PDF as bytes. Optionally saves to output_path.
     """
     buf = io.BytesIO()
@@ -77,51 +77,43 @@ def generate_label_pdf(
         "tiny", parent=styles["Normal"], fontSize=5.5, leading=7, spaceAfter=0
     )
     tiny_bold = ParagraphStyle(
-        "tiny_bold", parent=tiny, fontName="Helvetica-Bold"
+        "tiny_bold", parent=tiny, fontName="Helvetica-Bold", fontSize=6, leading=7.5
     )
     micro = ParagraphStyle(
-        "micro", parent=styles["Normal"], fontSize=4.5, leading=6, textColor=colors.grey
+        "micro", parent=styles["Normal"], fontSize=4, leading=5.5,
+        textColor=colors.grey, wordWrap="CJK",
     )
-
-    qr_bytes = generate_qr_code(label_url, size_px=120)
-    qr_img = Image(io.BytesIO(qr_bytes), width=18 * rl_mm, height=18 * rl_mm)
 
     time_str = utc_time.strftime("%Y-%m-%d %H:%M UTC")
     lat_str = f"{latitude:.4f}°N" if latitude >= 0 else f"{abs(latitude):.4f}°S"
     lon_str = f"{longitude:.4f}°E" if longitude >= 0 else f"{abs(longitude):.4f}°W"
 
     meta_lines = [
-        "<b>IMR Salinity Sample</b>",
-        f"<b>{platform_id}</b>",
-        time_str,
-        f"{lat_str}  {lon_str}",
-        f"Depth: {depth_m:.1f} m",
+        ("<b>IMR Salinity Sample</b>", tiny_bold),
+        (f"<b>{platform_id}</b>", tiny_bold),
+        (time_str, tiny),
+        (f"{lat_str}  {lon_str}", tiny),
+        (f"Depth: {depth_m:.1f} m", tiny),
     ]
     if cruise_id:
-        meta_lines.append(f"Cruise: {cruise_id}")
+        meta_lines.append((f"Cruise: {cruise_id}", tiny))
     if station_id:
-        meta_lines.append(f"Station: {station_id}")
-    if cast_number:
-        meta_lines.append(f"Cast: {cast_number}  Btl: {bottle_number or '-'}")
+        meta_lines.append((f"Station: {station_id}", tiny))
 
-    meta_content = [
-        Paragraph(line, tiny_bold if i == 0 else tiny)
-        for i, line in enumerate(meta_lines)
-    ]
-
-    table = Table(
-        [[meta_content, qr_img]],
-        colWidths=[36 * rl_mm, 20 * rl_mm],
-    )
-    table.setStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-    ])
+    qr_size = 24 * rl_mm
+    qr_bytes = generate_qr_code(label_url, size_px=150)
+    qr_img = Image(io.BytesIO(qr_bytes), width=qr_size, height=qr_size)
+    qr_img.hAlign = "CENTER"
 
     id_para = Paragraph(f"ID: {sample_id}", micro)
 
-    doc.build([table, id_para])
+    story = [Paragraph(text, style) for text, style in meta_lines]
+    story.append(Spacer(1, 1.5 * rl_mm))
+    story.append(qr_img)
+    story.append(Spacer(1, 1 * rl_mm))
+    story.append(id_para)
+
+    doc.build(story)
 
     pdf_bytes = buf.getvalue()
 
