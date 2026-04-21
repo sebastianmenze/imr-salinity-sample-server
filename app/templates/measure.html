@@ -69,6 +69,15 @@
 </div>
 {% endif %}
 
+<div style="display:flex; gap:8px; margin-bottom:16px">
+    <a href="/label/{{ sample.id }}" class="btn btn-secondary" style="flex:1; text-decoration:none; text-align:center">
+        🏷️ View Label
+    </a>
+    <a href="/label/{{ sample.id }}/pdf" class="btn btn-secondary" style="flex:1; text-decoration:none; text-align:center">
+        🖨️ Download Label PDF
+    </a>
+</div>
+
 {% if sample.status.value == 'uploaded' %}
 <div class="alert alert-success">
     ✅ This sample has already been uploaded to PhysChem (PSAL_LAB: {{ "%.4f"|format(sample.psal_lab) }}).
