@@ -30,6 +30,12 @@
             <div class="label">Depth</div>
             <div class="value">{{ sample.depth_m }} m</div>
         </div>
+        {% if sample.cruise_id %}
+        <div class="meta-item">
+            <div class="label">Cruise</div>
+            <div class="value">{{ sample.cruise_id }}</div>
+        </div>
+        {% endif %}
         {% if sample.psal_1 %}
         <div class="meta-item">
             <div class="label">PSAL Sensor 1</div>
