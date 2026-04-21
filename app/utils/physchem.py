@@ -144,10 +144,27 @@ class PhysChemClient:
         logger.warning(f"No BOT instrument found on operation {operation_id}")
         return None
 
-    async def create_parameter(self, instrument_id: int) -> dict:
+    async def find_or_create_psal_parameter(self, instrument_id: int) -> dict:
+        """Return existing PSAL parameter on the instrument, or create one."""
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.get(
+                f"{self.base_url}/instrument/{instrument_id}/parameter/list",
+                headers=self._headers(),
+            )
+            logger.info(f"GET /instrument/{instrument_id}/parameter/list → {r.status_code}: {r.text[:300]}")
+            r.raise_for_status()
+            params = _parse_json(r)
+
+        for p in params:
+            if p.get("parameterCode") == "PSAL":
+                logger.info(f"Reusing existing PSAL parameter {p['id']} on instrument {instrument_id}")
+                return p
+
+        # None found — create one with ordinal = max_existing + 1
+        next_ordinal = max((p.get("ordinal", 0) for p in params), default=0) + 1
         payload = {
             "parameterCode": "PSAL",
-            "ordinal": 1,
+            "ordinal": next_ordinal,
             "suppliedParameterName": "PSAL_LAB",
             "units": "PSU",
             "suppliedUnits": "PSU",
@@ -232,9 +249,9 @@ class PhysChemClient:
                 return {"success": False, "message": f"No BOT instrument found on PhysChem operation {operation_id} — ensure the CTD cast has bottle data in PhysChem"}
             instrument_id = instrument["id"]
 
-            parameter = await self.create_parameter(instrument_id)
+            parameter = await self.find_or_create_psal_parameter(instrument_id)
             parameter_id = parameter["id"]
-            logger.info(f"Created PhysChem PSAL_LAB parameter {parameter_id}")
+            logger.info(f"Using PhysChem PSAL parameter {parameter_id}")
 
             sample_num = 1
             if bottle_number:
