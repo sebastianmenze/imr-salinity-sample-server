@@ -9,10 +9,9 @@ Label size: 30mm × 50mm (Phomemo M110 format).
 import qrcode
 import io
 import os
-from reportlab.lib.pagesizes import mm
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
+from reportlab.pdfgen import canvas as rl_canvas
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.lib.units import mm as rl_mm
 from PIL import Image as PILImage
 from datetime import datetime
@@ -58,62 +57,69 @@ def generate_label_pdf(
     output_path: Optional[str] = None,
 ) -> bytes:
     """
-    Generate a 30mm × 50mm label PDF for a salinity sample (Phomemo M110).
+    Generate a single 30mm × 50mm label PDF for a salinity sample (Phomemo M110).
     Returns the PDF as bytes. Optionally saves to output_path.
     """
     buf = io.BytesIO()
 
-    doc = SimpleDocTemplate(
-        buf,
-        pagesize=(LABEL_WIDTH_MM * rl_mm, LABEL_HEIGHT_MM * rl_mm),
-        leftMargin=2 * rl_mm,
-        rightMargin=2 * rl_mm,
-        topMargin=2 * rl_mm,
-        bottomMargin=2 * rl_mm,
-    )
+    w = LABEL_WIDTH_MM * rl_mm   # 85.0 pt
+    h = LABEL_HEIGHT_MM * rl_mm  # 141.7 pt
+    margin = 2 * rl_mm           # 5.67 pt
+    usable_w = w - 2 * margin    # 73.7 pt
 
-    styles = getSampleStyleSheet()
-    tiny = ParagraphStyle(
-        "tiny", parent=styles["Normal"], fontSize=5.5, leading=7, spaceAfter=0
-    )
-    tiny_bold = ParagraphStyle(
-        "tiny_bold", parent=tiny, fontName="Helvetica-Bold", fontSize=6, leading=7.5
-    )
-    micro = ParagraphStyle(
-        "micro", parent=styles["Normal"], fontSize=4, leading=5.5,
-        textColor=colors.grey, wordWrap="CJK",
-    )
+    c = rl_canvas.Canvas(buf, pagesize=(w, h))
 
+    # --- metadata text lines (font, size, leading) ---
     time_str = utc_time.strftime("%Y-%m-%d %H:%M UTC")
-    lat_str = f"{latitude:.4f}°N" if latitude >= 0 else f"{abs(latitude):.4f}°S"
-    lon_str = f"{longitude:.4f}°E" if longitude >= 0 else f"{abs(longitude):.4f}°W"
+    lat_str = f"{latitude:.4f}N" if latitude >= 0 else f"{abs(latitude):.4f}S"
+    lon_str = f"{longitude:.4f}E" if longitude >= 0 else f"{abs(longitude):.4f}W"
 
-    meta_lines = [
-        ("<b>IMR Salinity Sample</b>", tiny_bold),
-        (f"<b>{platform_id}</b>", tiny_bold),
-        (time_str, tiny),
-        (f"{lat_str}  {lon_str}", tiny),
-        (f"Depth: {depth_m:.1f} m", tiny),
+    lines = [
+        ("IMR Salinity Sample", "Helvetica-Bold", 6.0, 7.5),
+        (platform_id,           "Helvetica-Bold", 6.0, 7.5),
+        (time_str,              "Helvetica",       5.5, 7.0),
+        (f"{lat_str}  {lon_str}", "Helvetica",     5.5, 7.0),
+        (f"Depth: {depth_m:.1f} m", "Helvetica",  5.5, 7.0),
     ]
     if cruise_id:
-        meta_lines.append((f"Cruise: {cruise_id}", tiny))
+        lines.append((f"Cruise: {cruise_id}", "Helvetica", 5.5, 7.0))
     if station_id:
-        meta_lines.append((f"Station: {station_id}", tiny))
+        lines.append((f"Station: {station_id}", "Helvetica", 5.5, 7.0))
 
-    qr_size = 24 * rl_mm
+    # --- draw text top-down ---
+    y = h - margin
+    for text, font, size, leading in lines:
+        y -= leading
+        c.setFont(font, size)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(margin, y, text)
+
+    # --- QR code, centred ---
+    qr_size = 22 * rl_mm
+    gap = 1.5 * rl_mm
+    y -= gap
+    qr_y = y - qr_size
+    qr_x = (w - qr_size) / 2
     qr_bytes = generate_qr_code(label_url, size_px=150)
-    qr_img = Image(io.BytesIO(qr_bytes), width=qr_size, height=qr_size)
-    qr_img.hAlign = "CENTER"
+    c.drawImage(ImageReader(io.BytesIO(qr_bytes)), qr_x, qr_y,
+                width=qr_size, height=qr_size)
+    y = qr_y - gap
 
-    id_para = Paragraph(f"ID: {sample_id}", micro)
+    # --- sample ID in small grey text, wrapped if too wide ---
+    id_font = "Helvetica"
+    id_size = 3.5
+    id_leading = 4.5
+    c.setFont(id_font, id_size)
+    c.setFillGray(0.55)
+    id_str = f"ID: {sample_id}"
+    if stringWidth(id_str, id_font, id_size) <= usable_w:
+        c.drawString(margin, y - id_leading, id_str)
+    else:
+        mid = len(id_str) // 2
+        c.drawString(margin, y - id_leading,       id_str[:mid])
+        c.drawString(margin, y - id_leading * 2,   id_str[mid:])
 
-    story = [Paragraph(text, style) for text, style in meta_lines]
-    story.append(Spacer(1, 1.5 * rl_mm))
-    story.append(qr_img)
-    story.append(Spacer(1, 1 * rl_mm))
-    story.append(id_para)
-
-    doc.build(story)
+    c.save()
 
     pdf_bytes = buf.getvalue()
 
