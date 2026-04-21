@@ -156,8 +156,8 @@ class PhysChemClient:
             params = _parse_json(r)
 
         for p in params:
-            if p.get("parameterCode") == "PSAL":
-                logger.info(f"Reusing existing PSAL parameter {p['id']} on instrument {instrument_id}")
+            if p.get("suppliedParameterName") == "PSAL_LAB":
+                logger.info(f"Reusing existing PSAL_LAB parameter {p['id']} on instrument {instrument_id}")
                 return p
 
         # None found — create one with ordinal = max_existing + 1
