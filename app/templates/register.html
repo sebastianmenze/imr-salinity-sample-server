@@ -30,12 +30,12 @@
 </style>
 
 <div class="tab-bar">
-    <button class="tab active" id="tab-manual" onclick="showTab('manual')">✏️ Manual Entry</button>
-    <button class="tab" id="tab-bot" onclick="showTab('bot')">📁 BTL File</button>
+    <button class="tab" id="tab-manual" onclick="showTab('manual')">✏️ Manual Entry</button>
+    <button class="tab active" id="tab-bot" onclick="showTab('bot')">📁 BTL File</button>
 </div>
 
 <!-- Manual Entry Form -->
-<div id="panel-manual">
+<div id="panel-manual" style="display:none">
     <div class="card">
         <h2>Sample Metadata</h2>
         <form method="post" action="/register/manual">
@@ -92,7 +92,7 @@
 </div>
 
 <!-- BTL File Upload -->
-<div id="panel-bot" style="display:none">
+<div id="panel-bot">
     <div class="card">
         <h2>Upload Seabird BTL File</h2>
         <form id="bot-form" method="post" action="/register/bot/preview" enctype="multipart/form-data">

@@ -17,14 +17,10 @@ from app.models.sample import SalinitySample, SampleStatus
 from app.utils.bot_parser import parse_bot_file
 from app.utils.qr_generator import generate_label_pdf
 from app.config import settings
+from app.data.platforms import PLATFORMS
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
-
-PLATFORMS = [
-    "G.O. Sars", "Johan Hjort", "Kronprins Haakon",
-    "Vendla", "Hans Brattström", "Other"
-]
 
 
 @router.get("/", response_class=HTMLResponse)
