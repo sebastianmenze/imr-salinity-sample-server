@@ -91,6 +91,20 @@ def generate_label_pdf(
         lines.append((f"Cruise: {cruise_id}", "Helvetica", 5.0, 6.5))
     if station_id:
         lines.append((f"Station: {station_id}", "Helvetica", 5.0, 6.5))
+    if bottle_number:
+        lines.append((f"Bottle: {bottle_number}", "Helvetica", 5.0, 6.5))
+
+    # UUID split across lines to fit column width
+    id_font, id_size, id_leading = "Helvetica", 5.0, 6.5
+    id_full = f"ID: {sample_id}"
+    id_lines = []
+    remaining = id_full
+    while remaining:
+        for end in range(len(remaining), 0, -1):
+            if stringWidth(remaining[:end], id_font, id_size) <= text_col_w:
+                id_lines.append(remaining[:end])
+                remaining = remaining[end:]
+                break
 
     c = rl_canvas.Canvas(buf, pagesize=(w, h))
 
@@ -102,19 +116,11 @@ def generate_label_pdf(
         c.setFillColorRGB(0, 0, 0)
         c.drawString(margin, y, text)
 
-    # Sample ID — tiny grey text at the bottom of the text column
-    id_font, id_size, id_leading = "Helvetica", 3.0, 4.0
-    c.setFont(id_font, id_size)
-    c.setFillGray(0.55)
-    id_str = f"ID: {sample_id}"
-    id_y = margin
-    if stringWidth(id_str, id_font, id_size) <= text_col_w:
-        c.drawString(margin, id_y, id_str)
-    else:
-        # split at the hyphen nearest the midpoint
-        mid = len(id_str) // 2
-        c.drawString(margin, id_y + id_leading, id_str[:mid])
-        c.drawString(margin, id_y,              id_str[mid:])
+    for line in id_lines:
+        y -= id_leading
+        c.setFont(id_font, id_size)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(margin, y, line)
 
     # Draw QR code on the right
     qr_bytes = generate_qr_code(label_url, size_px=150)
