@@ -14,6 +14,7 @@ import logging
 from typing import Optional
 from datetime import datetime
 from app.config import settings
+from app.utils import azure_auth
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +26,12 @@ class PhysChemClient:
         self.api_key = settings.physchem_api_key
 
     def is_configured(self) -> bool:
-        return bool(self.api_key)
+        return azure_auth.is_authenticated() or bool(self.api_key)
 
     def _headers(self) -> dict:
+        token = azure_auth.get_access_token() or self.api_key
         return {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
             "Accept": "*/*",
         }

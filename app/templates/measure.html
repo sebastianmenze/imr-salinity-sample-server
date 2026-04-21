@@ -3,6 +3,46 @@
 {% block subtitle %}Laboratory Measurement{% endblock %}
 {% block content %}
 
+<!-- PhysChem Authentication Widget -->
+<div class="card" id="auth-card" style="border-left: 4px solid {% if physchem_authenticated %}#38a169{% else %}#e2e8f0{% endif %}; padding: 12px 16px;">
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+        <div style="flex:1; min-width:180px">
+            {% if physchem_authenticated %}
+            <div style="font-weight:600; color:#276749; font-size:0.9rem">🔐 PhysChem: logged in</div>
+            <div style="font-size:0.8rem; color:#4a5568; margin-top:2px" id="auth-user">{{ physchem_user }}</div>
+            {% else %}
+            <div style="font-weight:600; color:#744210; font-size:0.9rem" id="auth-not-logged-in">🔓 PhysChem: not logged in</div>
+            <div style="font-size:0.8rem; color:#718096; margin-top:2px">Login to enable automatic upload after measurement</div>
+            {% endif %}
+        </div>
+        <div style="display:flex; gap:8px">
+            {% if physchem_authenticated %}
+            <button class="btn btn-secondary" style="font-size:0.8rem; padding:6px 12px"
+                    onclick="authLogout()">Logout</button>
+            {% else %}
+            <button class="btn btn-primary" style="font-size:0.8rem; padding:6px 14px"
+                    id="btn-login" onclick="authStart()">Login with Microsoft</button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Device code panel — shown after login initiated -->
+    <div id="auth-device-panel" style="display:none; margin-top:14px; padding:14px; background:#fffbeb; border-radius:8px; border:1px solid #f6e05e">
+        <div style="font-size:0.85rem; color:#744210; margin-bottom:10px">
+            Open <strong><a id="auth-verify-url" href="#" target="_blank" style="color:#744210"></a></strong>
+            in any browser and enter this code:
+        </div>
+        <div style="font-size:2rem; font-weight:700; letter-spacing:0.15em; color:#1a202c; text-align:center; padding:8px 0" id="auth-user-code"></div>
+        <div style="font-size:0.78rem; color:#718096; text-align:center" id="auth-expires"></div>
+        <div style="text-align:center; margin-top:10px">
+            <span style="font-size:0.8rem; color:#4a5568">⏳ Waiting for login…</span>
+        </div>
+    </div>
+
+    <!-- Error panel -->
+    <div id="auth-error-panel" style="display:none; margin-top:10px; padding:10px; background:#fff5f5; border-radius:6px; border:1px solid #feb2b2; font-size:0.82rem; color:#c53030" id="auth-error-msg"></div>
+</div>
+
 <div class="card">
     <h2>🧪 Sample Metadata</h2>
     <div class="meta-grid">
@@ -109,5 +149,67 @@
     </form>
 </div>
 {% endif %}
+
+<script>
+let _pollInterval = null;
+
+async function authStart() {
+    document.getElementById('btn-login').disabled = true;
+    document.getElementById('btn-login').textContent = 'Starting…';
+    document.getElementById('auth-error-panel').style.display = 'none';
+
+    const res = await fetch('/auth/start', {method: 'POST'});
+    const data = await res.json();
+
+    if (data.error) {
+        showAuthError(data.error);
+        return;
+    }
+
+    const verifyUrl = data.verification_uri;
+    const link = document.getElementById('auth-verify-url');
+    link.textContent = verifyUrl;
+    link.href = verifyUrl;
+    document.getElementById('auth-user-code').textContent = data.user_code;
+
+    const expiresMin = Math.round((data.expires_in || 900) / 60);
+    document.getElementById('auth-expires').textContent = `Code expires in ${expiresMin} minutes`;
+
+    document.getElementById('auth-device-panel').style.display = 'block';
+    document.getElementById('auth-not-logged-in') && (document.getElementById('auth-not-logged-in').style.display = 'none');
+
+    _pollInterval = setInterval(pollAuthStatus, 3000);
+}
+
+async function pollAuthStatus() {
+    const res = await fetch('/auth/status');
+    const data = await res.json();
+
+    if (data.status === 'success') {
+        clearInterval(_pollInterval);
+        // Reload page to show logged-in state
+        window.location.reload();
+    } else if (data.status === 'error') {
+        clearInterval(_pollInterval);
+        document.getElementById('auth-device-panel').style.display = 'none';
+        showAuthError(data.message || 'Authentication failed');
+        const btn = document.getElementById('btn-login');
+        if (btn) { btn.disabled = false; btn.textContent = 'Login with Microsoft'; }
+    }
+}
+
+async function authLogout() {
+    await fetch('/auth/logout', {method: 'POST'});
+    window.location.reload();
+}
+
+function showAuthError(msg) {
+    const el = document.getElementById('auth-error-panel');
+    el.textContent = '⚠️ ' + msg;
+    el.style.display = 'block';
+    const btn = document.getElementById('btn-login');
+    if (btn) { btn.disabled = false; btn.textContent = 'Login with Microsoft'; }
+}
+</script>
 
 {% endblock %}
