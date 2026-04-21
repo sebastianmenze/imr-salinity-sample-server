@@ -8,7 +8,12 @@
     <div class="alert alert-success">
         ✅ Measurement uploaded to PhysChem successfully!
         {% if upload_result.upload_id %}
-        <br><small>PhysChem ID: {{ upload_result.upload_id }}</small>
+        <br><small>Reading ID: {{ upload_result.upload_id }}</small>
+        {% endif %}
+        {% if upload_result.physchem_url %}
+        <br><a href="{{ upload_result.physchem_url }}" target="_blank" style="color:#276749; font-weight:600">
+            View in PhysChem →
+        </a>
         {% endif %}
     </div>
     {% else %}

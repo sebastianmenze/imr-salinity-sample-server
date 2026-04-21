@@ -339,6 +339,12 @@ class PhysChemClient:
             reading_id = reading.get("id", "")
             logger.info(f"PhysChem reading {reading_id}: PSAL_LAB={psal_lab}")
 
+            editor_base = self.base_url.replace("-api-", "-editor-")
+            physchem_url = (
+                f"{editor_base}/mission/{mission_id}/operation/{operation_id}"
+                f"/instrument/{instrument_id}/parameter"
+            )
+
             return {
                 "success": True,
                 "upload_id": str(reading_id),
@@ -347,6 +353,7 @@ class PhysChemClient:
                 "instrument_id": instrument_id,
                 "parameter_id": parameter_id,
                 "reading_id": reading_id,
+                "physchem_url": physchem_url,
             }
 
         except httpx.HTTPStatusError as e:
