@@ -170,15 +170,26 @@ class PhysChemClient:
             "acquirementMethod": "1019900",
         }
         logger.info(f"Creating PSAL_LAB parameter on instrument {instrument_id} with payload: {payload}")
-        async with httpx.AsyncClient(timeout=30) as client:
-            r = await client.post(
-                f"{self.base_url}/instrument/{instrument_id}/parameter",
-                json=payload,
-                headers=self._headers(),
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                r = await client.post(
+                    f"{self.base_url}/instrument/{instrument_id}/parameter",
+                    json=payload,
+                    headers=self._headers(),
+                )
+                logger.info(f"POST /instrument/{instrument_id}/parameter → {r.status_code}: {r.text[:500]}")
+                r.raise_for_status()
+                return _parse_json(r)
+        except httpx.HTTPStatusError as exc:
+            logger.warning(
+                f"PSAL_LAB parameter creation failed (HTTP {exc.response.status_code}) — "
+                f"falling back to first existing PSAL parameter on instrument {instrument_id}"
             )
-            logger.info(f"POST /instrument/{instrument_id}/parameter → {r.status_code}: {r.text[:500]}")
-            r.raise_for_status()
-            return _parse_json(r)
+            for p in params:
+                if p.get("parameterCode") == "PSAL":
+                    logger.info(f"Using fallback PSAL parameter {p['id']} ({p.get('suppliedParameterName')})")
+                    return p
+            raise ValueError(f"No PSAL or PSAL_LAB parameter available on instrument {instrument_id}") from exc
 
     async def find_sample_number_by_depth(
         self, instrument_id: int, depth_m: float
