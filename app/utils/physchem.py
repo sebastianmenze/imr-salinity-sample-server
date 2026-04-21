@@ -160,13 +160,12 @@ class PhysChemClient:
                 logger.info(f"Reusing existing PSAL_LAB parameter {p['id']} on instrument {instrument_id}")
                 return p
 
-        # None found — create one with ordinal = max_existing + 1
-        next_ordinal = max((p.get("ordinal", 0) for p in params), default=0) + 1
+        # None found — create one (ordinal=1 for PSAL_LAB which is a distinct code)
         payload = {
-            "parameterCode": "PSAL",
-            "ordinal": next_ordinal,
+            "parameterCode": "PSAL_LAB",
+            "ordinal": 1,
             "suppliedParameterName": "PSAL_LAB",
-            "units": "Dmnless",
+            "units": "PSU",
             "processingLevel": "L0",
             "acquirementMethod": "1019900",
         }
