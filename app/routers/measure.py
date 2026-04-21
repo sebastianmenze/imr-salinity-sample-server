@@ -34,8 +34,8 @@ async def measure_sample(request: Request, sample_id: uuid.UUID, db: Session = D
     return templates.TemplateResponse("measure.html", {
         "request": request,
         "sample": sample,
-        "physchem_user": azure_auth.get_logged_in_user(),
         "physchem_authenticated": azure_auth.is_authenticated(),
+        "physchem_token_status": azure_auth.get_token_status(),
     })
 
 

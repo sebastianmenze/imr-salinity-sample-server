@@ -3,45 +3,53 @@
 {% block subtitle %}Laboratory Measurement{% endblock %}
 {% block content %}
 
-<!-- PhysChem Authentication Widget -->
-<div class="card" id="auth-card" style="border-left: 4px solid {% if physchem_authenticated %}#38a169{% else %}#e2e8f0{% endif %}; padding: 12px 16px;">
+<!-- PhysChem Token Widget -->
+{% if physchem_authenticated %}
+<div class="card" style="border-left:4px solid #38a169; padding:12px 16px">
     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
-        <div style="flex:1; min-width:180px">
-            {% if physchem_authenticated %}
-            <div style="font-weight:600; color:#276749; font-size:0.9rem">🔐 PhysChem: logged in</div>
-            <div style="font-size:0.8rem; color:#4a5568; margin-top:2px" id="auth-user">{{ physchem_user }}</div>
-            {% else %}
-            <div style="font-weight:600; color:#744210; font-size:0.9rem" id="auth-not-logged-in">🔓 PhysChem: not logged in</div>
-            <div style="font-size:0.8rem; color:#718096; margin-top:2px">Login to enable automatic upload after measurement</div>
-            {% endif %}
+        <div style="flex:1">
+            <div style="font-weight:600; color:#276749; font-size:0.9rem">🔐 PhysChem token active</div>
+            <div style="font-size:0.8rem; color:#4a5568; margin-top:2px" id="token-countdown">
+                expires in {{ physchem_token_status.remaining_minutes }}m {{ physchem_token_status.remaining_seconds }}s
+            </div>
         </div>
         <div style="display:flex; gap:8px">
-            {% if physchem_authenticated %}
             <button class="btn btn-secondary" style="font-size:0.8rem; padding:6px 12px"
-                    onclick="authLogout()">Logout</button>
-            {% else %}
-            <button class="btn btn-primary" style="font-size:0.8rem; padding:6px 14px"
-                    id="btn-login" onclick="authStart()">Login with Microsoft</button>
-            {% endif %}
+                    onclick="showPastePanel()">Replace token</button>
+            <button class="btn btn-secondary" style="font-size:0.8rem; padding:6px 12px"
+                    onclick="authLogout()">Clear</button>
         </div>
     </div>
-
-    <!-- Device code panel — shown after login initiated -->
-    <div id="auth-device-panel" style="display:none; margin-top:14px; padding:14px; background:#fffbeb; border-radius:8px; border:1px solid #f6e05e">
-        <div style="font-size:0.85rem; color:#744210; margin-bottom:10px">
-            Open <strong><a id="auth-verify-url" href="#" target="_blank" style="color:#744210"></a></strong>
-            in any browser and enter this code:
-        </div>
-        <div style="font-size:2rem; font-weight:700; letter-spacing:0.15em; color:#1a202c; text-align:center; padding:8px 0" id="auth-user-code"></div>
-        <div style="font-size:0.78rem; color:#718096; text-align:center" id="auth-expires"></div>
-        <div style="text-align:center; margin-top:10px">
-            <span style="font-size:0.8rem; color:#4a5568">⏳ Waiting for login…</span>
-        </div>
+    <div id="paste-panel" style="display:none; margin-top:12px">
+        <textarea id="token-input" rows="3"
+                  style="width:100%; font-size:0.75rem; font-family:monospace; padding:8px; border:1px solid #cbd5e0; border-radius:6px; resize:vertical"
+                  placeholder="Paste new token here…"></textarea>
+        <button class="btn btn-primary" style="margin-top:8px; font-size:0.85rem; padding:8px 16px"
+                onclick="submitToken()">Save token</button>
     </div>
-
-    <!-- Error panel -->
-    <div id="auth-error-panel" style="display:none; margin-top:10px; padding:10px; background:#fff5f5; border-radius:6px; border:1px solid #feb2b2; font-size:0.82rem; color:#c53030" id="auth-error-msg"></div>
 </div>
+{% else %}
+<div class="card" style="border-left:4px solid #e2e8f0; padding:12px 16px">
+    {% if physchem_token_status.state == 'expired' %}
+    <div style="font-weight:600; color:#c53030; font-size:0.9rem; margin-bottom:8px">⚠️ PhysChem token expired — paste a new one</div>
+    {% else %}
+    <div style="font-weight:600; color:#744210; font-size:0.9rem; margin-bottom:4px">🔓 PhysChem token not set</div>
+    <div style="font-size:0.8rem; color:#718096; margin-bottom:10px">
+        Get a token from
+        <a href="https://physchem-token-test.hi.no" target="_blank" style="color:#003366">physchem-token-test.hi.no</a>
+        and paste it below to enable automatic upload after measurement.
+    </div>
+    {% endif %}
+    <textarea id="token-input" rows="3"
+              style="width:100%; font-size:0.75rem; font-family:monospace; padding:8px; border:1px solid #cbd5e0; border-radius:6px; resize:vertical"
+              placeholder="Paste token here…"></textarea>
+    <div style="display:flex; gap:8px; margin-top:8px; align-items:center">
+        <button class="btn btn-primary" style="font-size:0.85rem; padding:8px 16px"
+                onclick="submitToken()">Save token</button>
+        <span id="token-error" style="font-size:0.8rem; color:#c53030; display:none"></span>
+    </div>
+</div>
+{% endif %}
 
 <div class="card">
     <h2>🧪 Sample Metadata</h2>
@@ -151,51 +159,21 @@
 {% endif %}
 
 <script>
-let _pollInterval = null;
+async function submitToken() {
+    const token = document.getElementById('token-input').value.trim();
+    if (!token) return;
 
-async function authStart() {
-    document.getElementById('btn-login').disabled = true;
-    document.getElementById('btn-login').textContent = 'Starting…';
-    document.getElementById('auth-error-panel').style.display = 'none';
-
-    const res = await fetch('/auth/start', {method: 'POST'});
+    const body = new FormData();
+    body.append('token', token);
+    const res = await fetch('/auth/token', {method: 'POST', body});
     const data = await res.json();
 
     if (data.error) {
-        showAuthError(data.error);
+        const err = document.getElementById('token-error');
+        if (err) { err.textContent = data.error; err.style.display = 'inline'; }
         return;
     }
-
-    const verifyUrl = data.verification_uri;
-    const link = document.getElementById('auth-verify-url');
-    link.textContent = verifyUrl;
-    link.href = verifyUrl;
-    document.getElementById('auth-user-code').textContent = data.user_code;
-
-    const expiresMin = Math.round((data.expires_in || 900) / 60);
-    document.getElementById('auth-expires').textContent = `Code expires in ${expiresMin} minutes`;
-
-    document.getElementById('auth-device-panel').style.display = 'block';
-    document.getElementById('auth-not-logged-in') && (document.getElementById('auth-not-logged-in').style.display = 'none');
-
-    _pollInterval = setInterval(pollAuthStatus, 3000);
-}
-
-async function pollAuthStatus() {
-    const res = await fetch('/auth/status');
-    const data = await res.json();
-
-    if (data.status === 'success') {
-        clearInterval(_pollInterval);
-        // Reload page to show logged-in state
-        window.location.reload();
-    } else if (data.status === 'error') {
-        clearInterval(_pollInterval);
-        document.getElementById('auth-device-panel').style.display = 'none';
-        showAuthError(data.message || 'Authentication failed');
-        const btn = document.getElementById('btn-login');
-        if (btn) { btn.disabled = false; btn.textContent = 'Login with Microsoft'; }
-    }
+    window.location.reload();
 }
 
 async function authLogout() {
@@ -203,13 +181,25 @@ async function authLogout() {
     window.location.reload();
 }
 
-function showAuthError(msg) {
-    const el = document.getElementById('auth-error-panel');
-    el.textContent = '⚠️ ' + msg;
-    el.style.display = 'block';
-    const btn = document.getElementById('btn-login');
-    if (btn) { btn.disabled = false; btn.textContent = 'Login with Microsoft'; }
+function showPastePanel() {
+    document.getElementById('paste-panel').style.display = 'block';
 }
+
+// Live countdown for token expiry
+(function () {
+    const el = document.getElementById('token-countdown');
+    if (!el) return;
+    let remaining = {{ physchem_token_status.remaining_minutes | default(0) }} * 60
+                  + {{ physchem_token_status.remaining_seconds | default(0) }};
+    setInterval(() => {
+        remaining = Math.max(0, remaining - 1);
+        const m = Math.floor(remaining / 60), s = remaining % 60;
+        el.textContent = remaining > 0
+            ? `expires in ${m}m ${s.toString().padStart(2,'0')}s`
+            : '⚠️ token expired — paste a new one';
+        if (remaining === 0) window.location.reload();
+    }, 1000);
+})();
 </script>
 
 {% endblock %}
