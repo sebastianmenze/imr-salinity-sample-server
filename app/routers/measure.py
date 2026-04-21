@@ -41,7 +41,7 @@ async def submit_measurement(
     request: Request,
     sample_id: uuid.UUID,
     psal_lab: float = Form(...),
-    measured_by: str = Form(...),
+    measured_by: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
