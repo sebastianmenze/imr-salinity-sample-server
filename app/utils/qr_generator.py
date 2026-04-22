@@ -66,34 +66,39 @@ def generate_label_pdf(
     h = LABEL_HEIGHT_MM * rl_mm   # 141.7 pt
     margin = 2.0 * rl_mm
 
-    # QR code: 30mm × 30mm, centred horizontally, 2mm from bottom
+    # QR code: right side, centred vertically
     qr_size = 30 * rl_mm
-    qr_x = (w - qr_size) / 2
-    qr_y = margin
+    qr_x    = w - margin - qr_size
+    qr_y    = (h - qr_size) / 2
+
+    # Text column: everything to the left of the QR
+    text_w = qr_x - margin - 1.5 * rl_mm   # 1.5 mm gap before QR
 
     # Build metadata lines: (text, font_name, font_size, leading)
-    time_str = utc_time.strftime("%Y-%m-%d %H:%M UTC")
-    lat_str  = f"{latitude:.4f}°N"  if latitude  >= 0 else f"{abs(latitude):.4f}°S"
-    lon_str  = f"{longitude:.4f}°E" if longitude >= 0 else f"{abs(longitude):.4f}°W"
+    time_str = utc_time.strftime("%Y-%m-%d %H:%M")
+    lat_str  = f"{latitude:.3f}°N"  if latitude  >= 0 else f"{abs(latitude):.3f}°S"
+    lon_str  = f"{longitude:.3f}°E" if longitude >= 0 else f"{abs(longitude):.3f}°W"
 
     lines = [
-        ("IMR Salinity Sample",      "Helvetica-Bold", 8.0, 10.0),
-        (platform_id,                "Helvetica-Bold", 7.0,  9.0),
-        (time_str,                   "Helvetica",      6.5,  8.0),
-        (f"{lat_str}   {lon_str}",   "Helvetica",      6.0,  7.5),
-        (f"Depth: {depth_m:.1f} m", "Helvetica",      6.0,  7.5),
+        ("IMR Salinity",             "Helvetica-Bold", 7.0, 8.5),
+        ("Sample",                   "Helvetica-Bold", 7.0, 8.5),
+        (platform_id,                "Helvetica-Bold", 6.0, 7.5),
+        (time_str + " UTC",          "Helvetica",      5.5, 7.0),
+        (lat_str,                    "Helvetica",      5.5, 6.5),
+        (lon_str,                    "Helvetica",      5.5, 6.5),
+        (f"Depth: {depth_m:.1f} m", "Helvetica",      5.5, 6.5),
     ]
     if cruise_id:
-        lines.append((f"Cruise: {cruise_id}", "Helvetica", 6.0, 7.5))
+        lines.append((f"C: {cruise_id}", "Helvetica", 5.0, 6.0))
     if cast_number:
-        lines.append((f"Station: {cast_number}", "Helvetica", 6.0, 7.5))
+        lines.append((f"St: {cast_number}", "Helvetica", 5.0, 6.0))
     if bottle_number:
-        lines.append((f"Bottle: {bottle_number}", "Helvetica", 6.0, 7.5))
-    lines.append((f"ID: {sample_id[:8]}…", "Helvetica", 5.5, 7.0))
+        lines.append((f"Bot: {bottle_number}", "Helvetica", 5.0, 6.0))
+    lines.append((f"ID:{sample_id[:8]}", "Helvetica", 4.5, 6.0))
 
     c = rl_canvas.Canvas(buf, pagesize=(w, h))
 
-    # Draw text top-down
+    # Draw text top-down in left column
     y = h - margin
     for text, font, size, leading in lines:
         y -= leading
@@ -101,7 +106,7 @@ def generate_label_pdf(
         c.setFillColorRGB(0, 0, 0)
         c.drawString(margin, y, text)
 
-    # Draw QR code at the bottom
+    # Draw QR code on the right
     qr_bytes = generate_qr_code(label_url, size_px=200)
     c.drawImage(ImageReader(io.BytesIO(qr_bytes)), qr_x, qr_y,
                 width=qr_size, height=qr_size)
