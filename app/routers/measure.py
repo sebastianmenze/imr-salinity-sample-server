@@ -4,12 +4,14 @@ Handles QR scan landing page and salinity measurement submission.
 """
 
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
 import uuid
+import csv
+import io
 
 from app.database import get_db
 from app.models.sample import SalinitySample, SampleStatus
@@ -177,3 +179,47 @@ async def list_samples(
         "samples": samples,
         "SampleStatus": SampleStatus,
     })
+
+
+@router.get("/samples/export.csv")
+async def export_samples_csv(db: Session = Depends(get_db)):
+    samples = db.query(SalinitySample).order_by(SalinitySample.utc_time.desc()).all()
+
+    fields = [
+        "id", "utc_time", "latitude", "longitude", "depth_m",
+        "platform_id", "cruise_id", "station_id", "cast_number", "bottle_number",
+        "psal_1", "psal_2", "psal_lab", "measured_by", "measured_at",
+        "status", "notes", "source",
+        "physchem_upload_id", "physchem_operation_id", "created_at",
+    ]
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(fields)
+    for s in samples:
+        writer.writerow([
+            str(s.id),
+            s.utc_time.strftime("%Y-%m-%dT%H:%M:%SZ") if s.utc_time else "",
+            s.latitude, s.longitude, s.depth_m,
+            s.platform_id, s.cruise_id or "", s.station_id or "",
+            s.cast_number or "", s.bottle_number or "",
+            s.psal_1 if s.psal_1 is not None else "",
+            s.psal_2 if s.psal_2 is not None else "",
+            s.psal_lab if s.psal_lab is not None else "",
+            s.measured_by or "",
+            s.measured_at.strftime("%Y-%m-%dT%H:%M:%SZ") if s.measured_at else "",
+            s.status.value,
+            s.notes or "",
+            s.source or "",
+            s.physchem_upload_id or "",
+            s.physchem_operation_id or "",
+            s.created_at.strftime("%Y-%m-%dT%H:%M:%SZ") if s.created_at else "",
+        ])
+
+    buf.seek(0)
+    filename = f"salinity_samples_{datetime.utcnow().strftime('%Y%m%d_%H%M')}.csv"
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

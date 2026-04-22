@@ -39,8 +39,10 @@
     <div class="card">
         <h2>Sample Metadata</h2>
         <form method="post" action="/register/manual">
-            <label>UTC Time</label>
-            <input type="datetime-local" name="utc_time" value="{{ now }}" required>
+            <label>UTC Time (24h)</label>
+            <input type="datetime-local" name="utc_time" value="{{ now }}" required
+                   step="60" style="font-variant-numeric:tabular-nums"
+                   onchange="this.value=this.value.slice(0,16)">
 
             <div class="meta-grid">
                 <div>
