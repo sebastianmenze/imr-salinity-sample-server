@@ -144,8 +144,14 @@ class PhysChemClient:
         logger.warning(f"No BOT instrument found on operation {operation_id}")
         return None
 
-    async def find_or_create_psal_parameter(self, instrument_id: int) -> dict:
-        """Return existing PSAL parameter on the instrument, or create one."""
+    async def find_or_create_psal_parameter(
+        self,
+        instrument_id: int,
+        sample_number: Optional[int] = None,
+        psal_value: Optional[float] = None,
+        value_datetime: Optional[datetime] = None,
+    ) -> dict:
+        """Return existing S LAB parameter, or create one with the reading embedded."""
         async with httpx.AsyncClient(timeout=30) as client:
             r = await client.get(
                 f"{self.base_url}/instrument/{instrument_id}/parameter/list",
@@ -160,7 +166,7 @@ class PhysChemClient:
                 logger.info(f"Reusing existing S LAB parameter {p['id']} on instrument {instrument_id}")
                 return p
 
-        # None found — create one (ordinal=1 for PSAL_LAB which is a distinct code)
+        # Build creation payload — embed reading if data is provided
         payload = {
             "parameterCode": "PSAL_LAB",
             "ordinal": 1,
@@ -169,6 +175,13 @@ class PhysChemClient:
             "processingLevel": "L0",
             "acquirementMethod": "1019900",
         }
+        if sample_number is not None and psal_value is not None and value_datetime is not None:
+            payload["reading"] = [{
+                "sampleNumber": sample_number,
+                "valueDateTime": value_datetime.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "valueDec": psal_value,
+                "quality": "1",
+            }]
         logger.info(f"Creating PSAL_LAB parameter on instrument {instrument_id} with payload: {payload}")
         try:
             async with httpx.AsyncClient(timeout=30) as client:
@@ -316,10 +329,6 @@ class PhysChemClient:
                 return {"success": False, "message": f"No BOT instrument found on PhysChem operation {operation_id} — ensure the CTD cast has bottle data in PhysChem"}
             instrument_id = instrument["id"]
 
-            parameter = await self.find_or_create_psal_parameter(instrument_id)
-            parameter_id = parameter["id"]
-            logger.info(f"Using PhysChem PSAL parameter {parameter_id}")
-
             sample_num = await self.find_sample_number_by_depth(instrument_id, depth_m)
             if sample_num is None:
                 sample_num = 1
@@ -329,6 +338,15 @@ class PhysChemClient:
                     except ValueError:
                         pass
                 logger.info(f"Depth match unavailable, using bottle_number as sampleNumber: {sample_num}")
+
+            parameter = await self.find_or_create_psal_parameter(
+                instrument_id,
+                sample_number=sample_num,
+                psal_value=psal_lab,
+                value_datetime=utc_time,
+            )
+            parameter_id = parameter["id"]
+            logger.info(f"Using PhysChem PSAL parameter {parameter_id}")
 
             reading = await self.upsert_reading(
                 parameter_id=parameter_id,
