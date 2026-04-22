@@ -4,7 +4,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     database_url: str = "postgresql://salinity:salinity@db:5432/salinity"
-    base_url: str = "http://localhost:8000"
+    base_url: str = "http://nautilus.imr.no:8000"
     secret_key: str = "changeme"
     physchem_api_url: str = "https://physchem-api-test.hi.no"
     physchem_api_key: Optional[str] = None
