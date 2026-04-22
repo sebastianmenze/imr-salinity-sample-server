@@ -3,7 +3,7 @@ QR code and label PDF generator.
 
 Generates a printable label (PDF) for each salinity sample containing
 human-readable metadata and a QR code linking to the lab measurement URL.
-Label size: 50mm × 30mm landscape (Phomemo M110 format).
+Label size: 50mm × 50mm square (Phomemo M110 format).
 """
 
 import qrcode
@@ -11,7 +11,6 @@ import io
 import os
 from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.lib.utils import ImageReader
-from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.lib.units import mm as rl_mm
 from PIL import Image as PILImage
 from datetime import datetime
@@ -21,7 +20,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 LABEL_WIDTH_MM  = 50
-LABEL_HEIGHT_MM = 30
+LABEL_HEIGHT_MM = 50
 
 
 def generate_qr_code(url: str, size_px: int = 200) -> bytes:
@@ -57,58 +56,44 @@ def generate_label_pdf(
     output_path: Optional[str] = None,
 ) -> bytes:
     """
-    Generate a single 50mm × 30mm landscape label PDF (Phomemo M110).
-    QR code on the right, metadata text on the left.
+    Generate a single 50mm × 50mm square label PDF.
+    Text stacked at the top, large centred QR code at the bottom.
     Returns the PDF as bytes. Optionally saves to output_path.
     """
     buf = io.BytesIO()
 
     w = LABEL_WIDTH_MM  * rl_mm   # 141.7 pt
-    h = LABEL_HEIGHT_MM * rl_mm   #  85.0 pt
-    margin = 1.5 * rl_mm          #   4.25 pt
+    h = LABEL_HEIGHT_MM * rl_mm   # 141.7 pt
+    margin = 2.0 * rl_mm
 
-    # QR code: fixed size, centred vertically on the right side
-    qr_size = 26 * rl_mm
-    qr_x = w - margin - qr_size
-    qr_y = (h - qr_size) / 2
+    # QR code: 30mm × 30mm, centred horizontally, 2mm from bottom
+    qr_size = 30 * rl_mm
+    qr_x = (w - qr_size) / 2
+    qr_y = margin
 
-    # Text column sits to the left of the QR code
-    text_col_w = qr_x - margin - 1 * rl_mm   # 1 mm gap before QR
-
-    # --- build metadata lines: (text, font_name, font_size, leading) ---
+    # Build metadata lines: (text, font_name, font_size, leading)
     time_str = utc_time.strftime("%Y-%m-%d %H:%M UTC")
-    lat_str  = f"{latitude:.4f}N"  if latitude  >= 0 else f"{abs(latitude):.4f}S"
-    lon_str  = f"{longitude:.4f}E" if longitude >= 0 else f"{abs(longitude):.4f}W"
+    lat_str  = f"{latitude:.4f}°N"  if latitude  >= 0 else f"{abs(latitude):.4f}°S"
+    lon_str  = f"{longitude:.4f}°E" if longitude >= 0 else f"{abs(longitude):.4f}°W"
 
     lines = [
-        ("IMR Salinity Sample",       "Helvetica-Bold", 6.0, 7.5),
-        (platform_id,                 "Helvetica-Bold", 5.5, 7.0),
-        (time_str,                    "Helvetica",      5.0, 6.5),
-        (f"{lat_str}  {lon_str}",     "Helvetica",      5.0, 6.5),
-        (f"Depth: {depth_m:.1f} m",  "Helvetica",      5.0, 6.5),
+        ("IMR Salinity Sample",      "Helvetica-Bold", 8.0, 10.0),
+        (platform_id,                "Helvetica-Bold", 7.0,  9.0),
+        (time_str,                   "Helvetica",      6.5,  8.0),
+        (f"{lat_str}   {lon_str}",   "Helvetica",      6.0,  7.5),
+        (f"Depth: {depth_m:.1f} m", "Helvetica",      6.0,  7.5),
     ]
     if cruise_id:
-        lines.append((f"Cruise: {cruise_id}", "Helvetica", 5.0, 6.5))
-    if station_id:
-        lines.append((f"Station: {station_id}", "Helvetica", 5.0, 6.5))
+        lines.append((f"Cruise: {cruise_id}", "Helvetica", 6.0, 7.5))
+    if cast_number:
+        lines.append((f"Station: {cast_number}", "Helvetica", 6.0, 7.5))
     if bottle_number:
-        lines.append((f"Bottle: {bottle_number}", "Helvetica", 5.0, 6.5))
-
-    # UUID split across lines to fit column width
-    id_font, id_size, id_leading = "Helvetica", 5.0, 6.5
-    id_full = f"ID: {sample_id}"
-    id_lines = []
-    remaining = id_full
-    while remaining:
-        for end in range(len(remaining), 0, -1):
-            if stringWidth(remaining[:end], id_font, id_size) <= text_col_w:
-                id_lines.append(remaining[:end])
-                remaining = remaining[end:]
-                break
+        lines.append((f"Bottle: {bottle_number}", "Helvetica", 6.0, 7.5))
+    lines.append((f"ID: {sample_id[:8]}…", "Helvetica", 5.5, 7.0))
 
     c = rl_canvas.Canvas(buf, pagesize=(w, h))
 
-    # Draw text top-down in the left column
+    # Draw text top-down
     y = h - margin
     for text, font, size, leading in lines:
         y -= leading
@@ -116,14 +101,8 @@ def generate_label_pdf(
         c.setFillColorRGB(0, 0, 0)
         c.drawString(margin, y, text)
 
-    for line in id_lines:
-        y -= id_leading
-        c.setFont(id_font, id_size)
-        c.setFillColorRGB(0, 0, 0)
-        c.drawString(margin, y, line)
-
-    # Draw QR code on the right
-    qr_bytes = generate_qr_code(label_url, size_px=150)
+    # Draw QR code at the bottom
+    qr_bytes = generate_qr_code(label_url, size_px=200)
     c.drawImage(ImageReader(io.BytesIO(qr_bytes)), qr_x, qr_y,
                 width=qr_size, height=qr_size)
 
