@@ -66,35 +66,34 @@ def generate_label_pdf(
     h = LABEL_HEIGHT_MM * rl_mm   # 141.7 pt
     margin = 2.0 * rl_mm
 
-    # QR code: right side, centred vertically
-    qr_size = 30 * rl_mm
+    # QR code: right 1/3, centred vertically
+    qr_size = w / 3 - margin - 1 * rl_mm
     qr_x    = w - margin - qr_size
     qr_y    = (h - qr_size) / 2
 
-    # Text column: everything to the left of the QR
-    text_w = qr_x - margin - 1.5 * rl_mm   # 1.5 mm gap before QR
+    # Text column: left 2/3
+    text_w = qr_x - margin - 1 * rl_mm
 
     # Build metadata lines: (text, font_name, font_size, leading)
-    time_str = utc_time.strftime("%Y-%m-%d %H:%M")
-    lat_str  = f"{latitude:.3f}°N"  if latitude  >= 0 else f"{abs(latitude):.3f}°S"
-    lon_str  = f"{longitude:.3f}°E" if longitude >= 0 else f"{abs(longitude):.3f}°W"
+    time_str = utc_time.strftime("%Y-%m-%d %H:%M UTC")
+    lat_str  = f"{latitude:.4f}°N"  if latitude  >= 0 else f"{abs(latitude):.4f}°S"
+    lon_str  = f"{longitude:.4f}°E" if longitude >= 0 else f"{abs(longitude):.4f}°W"
 
     lines = [
-        ("IMR Salinity",             "Helvetica-Bold", 7.0, 8.5),
-        ("Sample",                   "Helvetica-Bold", 7.0, 8.5),
-        (platform_id,                "Helvetica-Bold", 6.0, 7.5),
-        (time_str + " UTC",          "Helvetica",      5.5, 7.0),
-        (lat_str,                    "Helvetica",      5.5, 6.5),
-        (lon_str,                    "Helvetica",      5.5, 6.5),
-        (f"Depth: {depth_m:.1f} m", "Helvetica",      5.5, 6.5),
+        ("IMR Salinity Sample",      "Helvetica-Bold", 9.0, 11.0),
+        (platform_id,                "Helvetica-Bold", 8.0, 10.0),
+        (time_str,                   "Helvetica",      7.0,  8.5),
+        (lat_str,                    "Helvetica",      7.0,  8.0),
+        (lon_str,                    "Helvetica",      7.0,  8.0),
+        (f"Depth: {depth_m:.1f} m", "Helvetica",      7.0,  8.0),
     ]
     if cruise_id:
-        lines.append((f"C: {cruise_id}", "Helvetica", 5.0, 6.0))
+        lines.append((f"Cruise: {cruise_id}", "Helvetica", 6.5, 7.5))
     if cast_number:
-        lines.append((f"St: {cast_number}", "Helvetica", 5.0, 6.0))
+        lines.append((f"Station: {cast_number}", "Helvetica", 6.5, 7.5))
     if bottle_number:
-        lines.append((f"Bot: {bottle_number}", "Helvetica", 5.0, 6.0))
-    lines.append((f"ID:{sample_id[:8]}", "Helvetica", 4.5, 6.0))
+        lines.append((f"Bottle: {bottle_number}", "Helvetica", 6.5, 7.5))
+    lines.append((f"ID: {sample_id[:8]}…", "Helvetica", 6.0, 7.0))
 
     c = rl_canvas.Canvas(buf, pagesize=(w, h))
 
