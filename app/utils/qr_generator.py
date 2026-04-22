@@ -74,26 +74,29 @@ def generate_label_pdf(
     # Text column: left 2/3
     text_w = qr_x - margin - 1 * rl_mm
 
-    # Build metadata lines: (text, font_name, font_size, leading)
+    # Build metadata lines — uniform 7pt throughout
+    SZ, LD = 7.0, 8.5
     time_str = utc_time.strftime("%Y-%m-%d %H:%M UTC")
     lat_str  = f"{latitude:.4f}°N"  if latitude  >= 0 else f"{abs(latitude):.4f}°S"
     lon_str  = f"{longitude:.4f}°E" if longitude >= 0 else f"{abs(longitude):.4f}°W"
 
     lines = [
-        ("IMR Salinity Sample",      "Helvetica-Bold", 9.0, 11.0),
-        (platform_id,                "Helvetica-Bold", 8.0, 10.0),
-        (time_str,                   "Helvetica",      7.0,  8.5),
-        (lat_str,                    "Helvetica",      7.0,  8.0),
-        (lon_str,                    "Helvetica",      7.0,  8.0),
-        (f"Depth: {depth_m:.1f} m", "Helvetica",      7.0,  8.0),
+        ("IMR Salinity Sample",      "Helvetica-Bold", SZ, LD),
+        (platform_id,                "Helvetica-Bold", SZ, LD),
+        (time_str,                   "Helvetica",      SZ, LD),
+        (lat_str,                    "Helvetica",      SZ, LD),
+        (lon_str,                    "Helvetica",      SZ, LD),
+        (f"Depth: {depth_m:.1f} m", "Helvetica",      SZ, LD),
     ]
     if cruise_id:
-        lines.append((f"Cruise: {cruise_id}", "Helvetica", 6.5, 7.5))
+        lines.append((f"Cruise: {cruise_id}",   "Helvetica", SZ, LD))
     if cast_number:
-        lines.append((f"Station: {cast_number}", "Helvetica", 6.5, 7.5))
+        lines.append((f"Station: {cast_number}", "Helvetica", SZ, LD))
     if bottle_number:
-        lines.append((f"Bottle: {bottle_number}", "Helvetica", 6.5, 7.5))
-    lines.append((f"ID: {sample_id[:8]}…", "Helvetica", 6.0, 7.0))
+        lines.append((f"Bottle: {bottle_number}", "Helvetica", SZ, LD))
+    # Full UUID split across two lines
+    lines.append((sample_id[:18], "Helvetica", SZ, LD))
+    lines.append((sample_id[18:], "Helvetica", SZ, LD))
 
     c = rl_canvas.Canvas(buf, pagesize=(w, h))
 
