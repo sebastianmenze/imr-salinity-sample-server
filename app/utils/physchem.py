@@ -171,7 +171,7 @@ class PhysChemClient:
             "parameterCode": "PSAL_LAB",
             "ordinal": 1,
             "suppliedParameterName": "S LAB",
-            "units": "PSU",
+            "units": "Dmnless",
             "processingLevel": "L0",
             "acquirementMethod": "1019900",
         }
