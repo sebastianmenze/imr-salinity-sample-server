@@ -66,13 +66,14 @@ def generate_label_pdf(
     h = LABEL_HEIGHT_MM * rl_mm   # 141.7 pt
     margin = 2.0 * rl_mm
 
-    # QR code: right 1/3, centred vertically
-    qr_size = w / 3 - margin - 1 * rl_mm
-    qr_x    = w - margin - qr_size
+    # QR code: right 50%, centred vertically
+    gap     = 1.5 * rl_mm
+    qr_size = w / 2 - margin - gap / 2
+    qr_x    = w / 2 + gap / 2
     qr_y    = (h - qr_size) / 2
 
-    # Text column: left 2/3
-    text_w = qr_x - margin - 1 * rl_mm
+    # Text column: left 50%
+    text_w  = w / 2 - margin - gap / 2
 
     # Build metadata lines — uniform 7pt throughout
     SZ, LD = 7.0, 8.5
