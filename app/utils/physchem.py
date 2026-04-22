@@ -167,7 +167,9 @@ class PhysChemClient:
                 return p
 
         # Build creation payload — embed reading if data is provided
+        next_param_number = max((p.get("parameterNumber", 0) for p in params), default=0) + 1
         payload = {
+            "parameterNumber": next_param_number,
             "parameterCode": "PSAL_LAB",
             "ordinal": 1,
             "suppliedParameterName": "S LAB",
