@@ -132,10 +132,29 @@
 </div>
 {% elif sample.status.value == 'measured' %}
 <div class="alert alert-success">
-    ✅ Measurement already recorded — PSAL_LAB: <strong>{{ "%.4f"|format(sample.psal_lab) }}</strong>
+    ✅ Measurement recorded — PSAL_LAB: <strong>{{ "%.4f"|format(sample.psal_lab) }}</strong>
     {% if sample.measured_by %} — measured by {{ sample.measured_by }}{% endif %}
     {% if sample.notes %}<br><em>Notes: {{ sample.notes }}</em>{% endif %}
 </div>
+
+{% if upload_error %}
+<div class="alert alert-danger" style="background:#fff5f5; border:1px solid #fc8181; border-radius:8px; padding:12px 16px; margin-bottom:12px">
+    <strong>❌ PhysChem upload failed:</strong><br>
+    <code style="font-size:0.85rem; color:#c53030; word-break:break-all">{{ upload_error }}</code>
+</div>
+{% endif %}
+
+{% if physchem_authenticated %}
+<form method="post" action="/measure/{{ sample.id }}/upload">
+    <button type="submit" class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem">
+        📤 {% if upload_error %}Retry PhysChem Upload{% else %}Upload to PhysChem{% endif %}
+    </button>
+</form>
+{% else %}
+<div class="alert alert-info" style="font-size:0.85rem">
+    Paste a PhysChem token above to upload this measurement.
+</div>
+{% endif %}
 {% else %}
 <div class="card">
     <h2>⚗️ Enter Lab Measurement</h2>

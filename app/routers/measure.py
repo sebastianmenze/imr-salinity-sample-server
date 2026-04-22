@@ -87,10 +87,74 @@ async def submit_measurement(
             db.commit()
 
     db.refresh(sample)
-    return templates.TemplateResponse("measure_success.html", {
+    if upload_result["success"]:
+        return templates.TemplateResponse("measure_success.html", {
+            "request": request,
+            "sample": sample,
+            "upload_result": upload_result,
+        })
+
+    # Upload failed — stay on measure page so user can retry
+    return templates.TemplateResponse("measure.html", {
         "request": request,
         "sample": sample,
-        "upload_result": upload_result,
+        "physchem_authenticated": azure_auth.is_authenticated(),
+        "physchem_token_status": azure_auth.get_token_status(),
+        "upload_error": upload_result.get("message", "Unknown error"),
+    })
+
+
+@router.post("/measure/{sample_id}/upload", response_class=HTMLResponse)
+async def retry_physchem_upload(
+    request: Request,
+    sample_id: uuid.UUID,
+    db: Session = Depends(get_db),
+):
+    """Retry PhysChem upload for an already-measured sample."""
+    sample = db.query(SalinitySample).filter(SalinitySample.id == sample_id).first()
+    if not sample:
+        raise HTTPException(status_code=404, detail="Sample not found")
+    if sample.status == SampleStatus.uploaded:
+        raise HTTPException(status_code=400, detail="Sample already uploaded to PhysChem")
+    if sample.psal_lab is None:
+        raise HTTPException(status_code=400, detail="No measurement recorded yet")
+
+    upload_result = await physchem_client.upload_measurement(
+        sample_id=str(sample.id),
+        utc_time=sample.utc_time,
+        latitude=sample.latitude,
+        longitude=sample.longitude,
+        depth_m=sample.depth_m,
+        platform_id=sample.platform_id,
+        psal_lab=sample.psal_lab,
+        psal_1=sample.psal_1,
+        psal_2=sample.psal_2,
+        cruise_id=sample.cruise_id,
+        station_id=sample.station_id,
+        cast_number=sample.cast_number,
+        bottle_number=sample.bottle_number,
+        notes=sample.notes,
+    )
+
+    if upload_result["success"]:
+        sample.status = SampleStatus.uploaded
+        sample.physchem_upload_id = upload_result.get("upload_id", "")
+        sample.physchem_operation_id = str(upload_result.get("operation_id", ""))
+        db.commit()
+        db.refresh(sample)
+        return templates.TemplateResponse("measure_success.html", {
+            "request": request,
+            "sample": sample,
+            "upload_result": upload_result,
+        })
+
+    db.refresh(sample)
+    return templates.TemplateResponse("measure.html", {
+        "request": request,
+        "sample": sample,
+        "physchem_authenticated": azure_auth.is_authenticated(),
+        "physchem_token_status": azure_auth.get_token_status(),
+        "upload_error": upload_result.get("message", "Unknown error"),
     })
 
 
