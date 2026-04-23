@@ -1,5 +1,6 @@
-from sqlalchemy import Column, String, Float, DateTime, Text, Enum as SAEnum
+from sqlalchemy import Column, String, Float, DateTime, Text, Integer, ForeignKey, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
 import uuid
@@ -11,6 +12,22 @@ class SampleStatus(str, enum.Enum):
     in_lab = "in_lab"           # QR scanned in lab
     measured = "measured"       # Lab salinity entered
     uploaded = "uploaded"       # Pushed to PhysChem
+
+
+class SampleMeasurement(Base):
+    __tablename__ = "sample_measurements"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sample_id = Column(UUID(as_uuid=True), ForeignKey("salinity_samples.id"), nullable=False)
+    psal_lab = Column(Float, nullable=False)
+    measured_by = Column(String(100), nullable=True)
+    measured_at = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+    physchem_reading_id = Column(String(50), nullable=True)
+    physchem_ordinal = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    sample = relationship("SalinitySample", back_populates="measurements")
 
 
 class SalinitySample(Base):
@@ -34,7 +51,7 @@ class SalinitySample(Base):
     psal_1 = Column(Float, nullable=True)
     psal_2 = Column(Float, nullable=True)
 
-    # Lab measurement
+    # Latest lab measurement (kept for quick access and backwards compatibility)
     psal_lab = Column(Float, nullable=True)
     measured_by = Column(String(100), nullable=True)
     measured_at = Column(DateTime(timezone=True), nullable=True)
@@ -42,11 +59,16 @@ class SalinitySample(Base):
     # System fields
     status = Column(SAEnum(SampleStatus), default=SampleStatus.registered, nullable=False)
     notes = Column(Text, nullable=True)
-    physchem_upload_id = Column(String(100), nullable=True)   # reading ID returned by PhysChem
-    physchem_operation_id = Column(String(50), nullable=True)  # PhysChem operation (CTD cast) ID
+    physchem_upload_id = Column(String(100), nullable=True)
+    physchem_operation_id = Column(String(50), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    source = Column(String(20), default="manual")  # "manual" or "bot_file"
+    source = Column(String(20), default="manual")
+
+    measurements = relationship(
+        "SampleMeasurement", back_populates="sample",
+        order_by="SampleMeasurement.created_at",
+    )
 
     @property
     def psal_diff(self):

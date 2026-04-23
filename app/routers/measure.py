@@ -14,7 +14,7 @@ import csv
 import io
 
 from app.database import get_db
-from app.models.sample import SalinitySample, SampleStatus
+from app.models.sample import SalinitySample, SampleMeasurement, SampleStatus
 from app.utils.physchem import physchem_client
 from app.utils import azure_auth
 
@@ -68,12 +68,24 @@ async def submit_measurement(
         raise HTTPException(status_code=404, detail="Sample not found")
 
     previous_status = sample.status
+    now = datetime.utcnow()
     sample.psal_lab = psal_lab
     sample.measured_by = measured_by
-    sample.measured_at = datetime.utcnow()
+    sample.measured_at = now
     sample.notes = notes or sample.notes
     sample.status = SampleStatus.measured
+
+    # Record this measurement in the per-sample history table
+    meas = SampleMeasurement(
+        sample_id=sample.id,
+        psal_lab=psal_lab,
+        measured_by=measured_by,
+        measured_at=now,
+        notes=notes,
+    )
+    db.add(meas)
     db.commit()
+    db.refresh(meas)
 
     upload_result = {"success": False, "message": "PhysChem not configured"}
     if physchem_client.is_configured():
@@ -97,6 +109,8 @@ async def submit_measurement(
             sample.status = SampleStatus.uploaded
             sample.physchem_upload_id = upload_result.get("upload_id", "")
             sample.physchem_operation_id = str(upload_result.get("operation_id", ""))
+            meas.physchem_reading_id = str(upload_result.get("reading_id", ""))
+            meas.physchem_ordinal = upload_result.get("physchem_ordinal")
             db.commit()
 
     db.refresh(sample)
@@ -176,6 +190,19 @@ async def retry_physchem_upload(
         sample.status = SampleStatus.uploaded
         sample.physchem_upload_id = upload_result.get("upload_id", "")
         sample.physchem_operation_id = str(upload_result.get("operation_id", ""))
+        # Update the most recent measurement record that hasn't been linked to PhysChem yet
+        pending = (
+            db.query(SampleMeasurement)
+            .filter(
+                SampleMeasurement.sample_id == sample.id,
+                SampleMeasurement.physchem_reading_id == None,  # noqa: E711
+            )
+            .order_by(SampleMeasurement.created_at.desc())
+            .first()
+        )
+        if pending:
+            pending.physchem_reading_id = str(upload_result.get("reading_id", ""))
+            pending.physchem_ordinal = upload_result.get("physchem_ordinal")
         db.commit()
         db.refresh(sample)
         physchem_data = await physchem_client.fetch_physchem_values(

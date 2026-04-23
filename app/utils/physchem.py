@@ -276,7 +276,7 @@ class PhysChemClient:
             "suppliedParameterName": "S LAB",
             "units": "Dmnless",
             "processingLevel": "L0",
-            "acquirementMethod": "1019900",
+            "acquirementMethod": "1020101",
         }
         if sample_number is not None and psal_value is not None and value_datetime is not None:
             payload["reading"] = [{
@@ -544,6 +544,7 @@ class PhysChemClient:
                 "instrument_id": instrument_id,
                 "parameter_id": parameter_id,
                 "reading_id": reading_id,
+                "physchem_ordinal": parameter.get("ordinal"),
                 "physchem_url": self._editor_url(mission_id, operation_id, instrument_id),
             }
 

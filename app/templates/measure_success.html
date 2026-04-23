@@ -81,6 +81,42 @@
     </div>
 </div>
 
+{% if sample.measurements %}
+<div class="card">
+    <h2>📋 Lab Measurements</h2>
+    <table style="width:100%; border-collapse:collapse; font-size:0.85rem">
+        <thead>
+            <tr style="border-bottom:2px solid #e2e8f0; text-align:left">
+                <th style="padding:6px 8px">#</th>
+                <th style="padding:6px 8px">PSAL_LAB</th>
+                <th style="padding:6px 8px">Measured by</th>
+                <th style="padding:6px 8px">Date (UTC)</th>
+                <th style="padding:6px 8px">PhysChem</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in sample.measurements %}
+            <tr style="border-bottom:1px solid #f0f0f0">
+                <td style="padding:6px 8px; color:#718096">{{ loop.index }}</td>
+                <td style="padding:6px 8px; font-weight:600; color:#003366">{{ "%.4f"|format(m.psal_lab) }}</td>
+                <td style="padding:6px 8px">{{ m.measured_by or '—' }}</td>
+                <td style="padding:6px 8px; font-variant-numeric:tabular-nums">
+                    {{ m.measured_at.strftime('%Y-%m-%d %H:%M') if m.measured_at else '—' }}
+                </td>
+                <td style="padding:6px 8px">
+                    {% if m.physchem_ordinal %}
+                    <span style="color:#276749; font-size:0.8rem">✓ ordinal {{ m.physchem_ordinal }}</span>
+                    {% else %}
+                    <span style="color:#a0aec0; font-size:0.8rem">not uploaded</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
 <a href="/" class="btn btn-primary" style="display:block; text-decoration:none; text-align:center">
     📋 Back to Registration
 </a>
