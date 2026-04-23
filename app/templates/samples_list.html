@@ -19,31 +19,58 @@
                     <th style="padding:6px 8px">Platform</th>
                     <th style="padding:6px 8px">Cruise</th>
                     <th style="padding:6px 8px">Depth</th>
+                    <th style="padding:6px 8px">Ord.</th>
                     <th style="padding:6px 8px">PSAL_LAB</th>
+                    <th style="padding:6px 8px">Measured by</th>
                     <th style="padding:6px 8px">Status</th>
                 </tr>
             </thead>
             <tbody>
             {% for s in samples %}
-            <tr style="border-top:1px solid #e2e8f0">
-                <td style="padding:6px 8px">
-                    <a href="/measure/{{ s.id }}" style="color:#003366">
-                        {{ s.utc_time.strftime('%Y-%m-%d %H:%M') }}
-                    </a>
-                </td>
-                <td style="padding:6px 8px">{{ s.platform_id }}</td>
-                <td style="padding:6px 8px">{{ s.cruise_id or '—' }}</td>
-                <td style="padding:6px 8px">{{ s.depth_m }} m</td>
-                <td style="padding:6px 8px">
-                    {% if s.psal_lab %}{{ "%.4f"|format(s.psal_lab) }}{% else %}—{% endif %}
-                </td>
-                <td style="padding:6px 8px">
-                    <span class="status-badge status-{{ s.status.value }}">{{ s.status.value }}</span>
-                </td>
-            </tr>
+                {% if s.measurements %}
+                    {% for m in s.measurements %}
+                    <tr style="border-top:{% if loop.first %}1px solid #e2e8f0{% else %}1px solid #f0f4f8{% endif %}">
+                        {% if loop.first %}
+                        <td style="padding:6px 8px" rowspan="{{ s.measurements|length }}">
+                            <a href="/measure/{{ s.id }}" style="color:#003366">
+                                {{ s.utc_time.strftime('%Y-%m-%d %H:%M') }}
+                            </a>
+                        </td>
+                        <td style="padding:6px 8px" rowspan="{{ s.measurements|length }}">{{ s.platform_id }}</td>
+                        <td style="padding:6px 8px" rowspan="{{ s.measurements|length }}">{{ s.cruise_id or '—' }}</td>
+                        <td style="padding:6px 8px" rowspan="{{ s.measurements|length }}">{{ s.depth_m }} m</td>
+                        {% endif %}
+                        <td style="padding:6px 8px; color:#718096">{{ m.physchem_ordinal or '—' }}</td>
+                        <td style="padding:6px 8px; font-weight:600">{{ "%.4f"|format(m.psal_lab) }}</td>
+                        <td style="padding:6px 8px; color:#4a5568">{{ m.measured_by or '—' }}</td>
+                        {% if loop.first %}
+                        <td style="padding:6px 8px" rowspan="{{ s.measurements|length }}">
+                            <span class="status-badge status-{{ s.status.value }}">{{ s.status.value }}</span>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                <tr style="border-top:1px solid #e2e8f0">
+                    <td style="padding:6px 8px">
+                        <a href="/measure/{{ s.id }}" style="color:#003366">
+                            {{ s.utc_time.strftime('%Y-%m-%d %H:%M') }}
+                        </a>
+                    </td>
+                    <td style="padding:6px 8px">{{ s.platform_id }}</td>
+                    <td style="padding:6px 8px">{{ s.cruise_id or '—' }}</td>
+                    <td style="padding:6px 8px">{{ s.depth_m }} m</td>
+                    <td style="padding:6px 8px; color:#718096">—</td>
+                    <td style="padding:6px 8px">—</td>
+                    <td style="padding:6px 8px">—</td>
+                    <td style="padding:6px 8px">
+                        <span class="status-badge status-{{ s.status.value }}">{{ s.status.value }}</span>
+                    </td>
+                </tr>
+                {% endif %}
             {% else %}
             <tr>
-                <td colspan="6" style="padding:20px; text-align:center; color:#718096">
+                <td colspan="8" style="padding:20px; text-align:center; color:#718096">
                     No samples registered yet.
                 </td>
             </tr>
