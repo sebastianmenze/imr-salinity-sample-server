@@ -83,18 +83,18 @@ def generate_label_pdf(
 
     lines = [
         ("IMR Salinity Sample",      "Helvetica-Bold", SZ, LD),
-        (platform_id,                "Helvetica-Bold", SZ, LD),
+        (platform_id,                "Helvetica",      SZ, LD),
         (time_str,                   "Helvetica",      SZ, LD),
         (lat_str,                    "Helvetica",      SZ, LD),
         (lon_str,                    "Helvetica",      SZ, LD),
-        (f"Depth: {depth_m:.1f} m", "Helvetica",      SZ, LD),
+        (f"Depth: {depth_m:.1f} m", "Helvetica-Bold", SZ, LD),
     ]
     if cruise_id:
-        lines.append((f"Cruise: {cruise_id}",   "Helvetica", SZ, LD))
+        lines.append((f"Cruise: {cruise_id}",    "Helvetica",      SZ, LD))
     if cast_number:
-        lines.append((f"Station: {cast_number}", "Helvetica", SZ, LD))
+        lines.append((f"Station: {cast_number}", "Helvetica",      SZ, LD))
     if bottle_number:
-        lines.append((f"Bottle: {bottle_number}", "Helvetica", SZ, LD))
+        lines.append((f"Bottle: {bottle_number}", "Helvetica-Bold", SZ, LD))
     # Full UUID split across two lines
     lines.append((sample_id[:18], "Helvetica", SZ, LD))
     lines.append((sample_id[18:], "Helvetica", SZ, LD))
