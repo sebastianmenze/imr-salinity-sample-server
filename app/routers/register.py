@@ -44,12 +44,14 @@ async def register_manual(
     station_id: Optional[str] = Form(None),
     cast_number: Optional[str] = Form(None),
     bottle_number: Optional[str] = Form(None),
-    psal_1: Optional[float] = Form(None),
-    psal_2: Optional[float] = Form(None),
+    psal_1: Optional[str] = Form(None),
+    psal_2: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
     utc_dt = datetime.fromisoformat(utc_time.replace("Z", ""))
+    psal_1_val = float(psal_1) if psal_1 else None
+    psal_2_val = float(psal_2) if psal_2 else None
     sample = SalinitySample(
         id=uuid.uuid4(),
         utc_time=utc_dt,
@@ -61,8 +63,8 @@ async def register_manual(
         station_id=station_id or None,
         cast_number=cast_number or None,
         bottle_number=bottle_number or None,
-        psal_1=psal_1,
-        psal_2=psal_2,
+        psal_1=psal_1_val,
+        psal_2=psal_2_val,
         notes=notes,
         status=SampleStatus.registered,
         source="manual",
