@@ -160,6 +160,9 @@
 <div class="alert alert-danger" style="background:#fff5f5; border:1px solid #fc8181; border-radius:8px; padding:12px 16px; margin-bottom:12px">
     <strong>❌ Additional upload failed:</strong><br>
     <code style="font-size:0.85rem; color:#c53030; word-break:break-all">{{ upload_error }}</code>
+    {% if upload_error_url %}
+    <br><a href="{{ upload_error_url }}" target="_blank" style="font-size:0.85rem; color:#c53030">View in PhysChem →</a>
+    {% endif %}
 </div>
 {% endif %}
 
@@ -196,6 +199,9 @@
 <div class="alert alert-danger" style="background:#fff5f5; border:1px solid #fc8181; border-radius:8px; padding:12px 16px; margin-bottom:12px">
     <strong>❌ PhysChem upload failed:</strong><br>
     <code style="font-size:0.85rem; color:#c53030; word-break:break-all">{{ upload_error }}</code>
+    {% if upload_error_url %}
+    <br><a href="{{ upload_error_url }}" target="_blank" style="font-size:0.85rem; color:#c53030">View in PhysChem →</a>
+    {% endif %}
 </div>
 {% endif %}
 

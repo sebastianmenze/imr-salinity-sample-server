@@ -483,17 +483,29 @@ class PhysChemClient:
                 label = f"cruise '{cruise_id}'" if cruise_id else "time/position"
                 return {"success": False, "message": f"No PhysChem mission found matching {label}"}
             mission_id = mission["id"]
+            editor_base = self.base_url.replace("-api-", "-editor-")
             logger.info(f"PhysChem mission {mission_id} (cruise={mission.get('cruise')})")
 
             operation = await self.find_operation(mission_id, utc_time, latitude, longitude)
             if not operation:
-                return {"success": False, "message": f"No matching CTD operation found in PhysChem mission {mission_id}"}
+                return {
+                    "success": False,
+                    "message": f"No matching CTD operation found in PhysChem mission {mission_id}",
+                    "physchem_url": f"{editor_base}/mission/{mission_id}",
+                }
             operation_id = operation["id"]
             logger.info(f"PhysChem operation {operation_id}")
 
             instrument = await self.find_bot_instrument(operation_id)
             if not instrument:
-                return {"success": False, "message": f"No BOT instrument found on PhysChem operation {operation_id} — ensure the CTD cast has bottle data in PhysChem"}
+                return {
+                    "success": False,
+                    "message": (
+                        f"No BOT instrument found on operation {operation_id} "
+                        f"(mission {mission_id}) — ensure the CTD cast has bottle data in PhysChem"
+                    ),
+                    "physchem_url": f"{editor_base}/mission/{mission_id}/operation/{operation_id}",
+                }
             instrument_id = instrument["id"]
 
             sample_num = await self.find_sample_number_by_depth(instrument_id, depth_m)

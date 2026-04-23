@@ -135,6 +135,7 @@ async def submit_measurement(
         "physchem_authenticated": azure_auth.is_authenticated(),
         "physchem_token_status": azure_auth.get_token_status(),
         "upload_error": upload_result.get("message", "Unknown error"),
+        "upload_error_url": upload_result.get("physchem_url"),
         "physchem_data": physchem_data,
     })
 
@@ -207,6 +208,7 @@ async def retry_physchem_upload(
         "physchem_authenticated": azure_auth.is_authenticated(),
         "physchem_token_status": azure_auth.get_token_status(),
         "upload_error": upload_result.get("message", "Unknown error"),
+        "upload_error_url": upload_result.get("physchem_url"),
         "physchem_data": physchem_data,
     })
 
