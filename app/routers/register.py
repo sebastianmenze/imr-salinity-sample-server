@@ -182,10 +182,12 @@ async def view_label(request: Request, sample_id: uuid.UUID, db: Session = Depen
     sample = db.query(SalinitySample).filter(SalinitySample.id == sample_id).first()
     if not sample:
         raise HTTPException(status_code=404, detail="Sample not found")
+    base = str(request.base_url).rstrip("/")
+    label_url = f"{base}/measure/{sample.id}"
     return templates.TemplateResponse("label_view.html", {
         "request": request,
         "sample": sample,
-        "label_url": sample.label_url,
+        "label_url": label_url,
     })
 
 
