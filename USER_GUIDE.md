@@ -54,9 +54,6 @@ Use this for samples taken without a CTD cast (e.g. bucket samples, underway sam
 
 ### Printing Labels
 
-![Example label](images/labelexample.png)
-*Example label — "Depth" and "Bottle" lines are printed in bold for quick identification.*
-
 After registration the system shows a **View Label** link and a **Download Label PDF** button.
 
 - The PDF is sized for the **Phomemo M110** label printer (50 × 50 mm).
