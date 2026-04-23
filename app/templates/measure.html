@@ -153,7 +153,37 @@
 
 {% if sample.status.value == 'uploaded' %}
 <div class="alert alert-success">
-    ✅ This sample has already been uploaded to PhysChem (PSAL_LAB: {{ "%.4f"|format(sample.psal_lab) }}).
+    ✅ Uploaded to PhysChem — PSAL_LAB: {{ "%.4f"|format(sample.psal_lab) }}
+</div>
+
+{% if upload_error %}
+<div class="alert alert-danger" style="background:#fff5f5; border:1px solid #fc8181; border-radius:8px; padding:12px 16px; margin-bottom:12px">
+    <strong>❌ Additional upload failed:</strong><br>
+    <code style="font-size:0.85rem; color:#c53030; word-break:break-all">{{ upload_error }}</code>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>⚗️ Add Additional Measurement</h2>
+    <div style="font-size:0.85rem; color:#718096; margin-bottom:14px">
+        Creates a new PSAL_LAB parameter with the next ordinal number in PhysChem.
+    </div>
+    <form method="post">
+        <label>PSAL_LAB (measured salinity)</label>
+        <input type="text" inputmode="decimal" name="psal_lab" placeholder="00.0000"
+               style="font-size:1.3rem; font-weight:bold; padding: 14px;"
+               required autofocus>
+
+        <label>Measured by</label>
+        <input type="text" name="measured_by" placeholder="Your name (optional)">
+
+        <label>Notes (optional)</label>
+        <textarea name="notes" rows="2" placeholder="Instrument, observations..."></textarea>
+
+        <button type="submit" class="btn btn-primary" style="font-size:1.1rem; padding:16px">
+            📤 Upload Additional Measurement
+        </button>
+    </form>
 </div>
 {% elif sample.status.value == 'measured' %}
 <div class="alert alert-success">

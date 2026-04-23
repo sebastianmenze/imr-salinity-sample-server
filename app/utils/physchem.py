@@ -322,10 +322,10 @@ class PhysChemClient:
         Look up existing PSAL (CTD sensor) and PSAL_LAB readings in PhysChem for a sample.
         Returns a dict with psal_values and psal_lab_values lists, or None if unavailable.
         """
-        if not self.is_configured() or not cruise_id:
-            return None
-
         try:
+            if not self.is_configured() or not cruise_id:
+                return None
+
             mission = await self.find_mission(cruise_id)
             if not mission:
                 return None

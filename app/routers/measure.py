@@ -33,14 +33,17 @@ async def measure_sample(request: Request, sample_id: uuid.UUID, db: Session = D
         sample.status = SampleStatus.in_lab
         db.commit()
 
-    physchem_data = await physchem_client.fetch_physchem_values(
-        cruise_id=sample.cruise_id,
-        utc_time=sample.utc_time,
-        latitude=sample.latitude,
-        longitude=sample.longitude,
-        depth_m=sample.depth_m,
-        bottle_number=sample.bottle_number,
-    )
+    try:
+        physchem_data = await physchem_client.fetch_physchem_values(
+            cruise_id=sample.cruise_id,
+            utc_time=sample.utc_time,
+            latitude=sample.latitude,
+            longitude=sample.longitude,
+            depth_m=sample.depth_m,
+            bottle_number=sample.bottle_number,
+        )
+    except Exception:
+        physchem_data = None
 
     return templates.TemplateResponse("measure.html", {
         "request": request,
@@ -64,9 +67,7 @@ async def submit_measurement(
     if not sample:
         raise HTTPException(status_code=404, detail="Sample not found")
 
-    if sample.status == SampleStatus.uploaded:
-        raise HTTPException(status_code=400, detail="Sample already uploaded to PhysChem")
-
+    previous_status = sample.status
     sample.psal_lab = psal_lab
     sample.measured_by = measured_by
     sample.measured_at = datetime.utcnow()
@@ -115,7 +116,11 @@ async def submit_measurement(
             "physchem_data": physchem_data,
         })
 
-    # Upload failed — stay on measure page so user can retry
+    # Upload failed — restore uploaded status if this was an additional measurement attempt
+    if previous_status == SampleStatus.uploaded:
+        sample.status = SampleStatus.uploaded
+        db.commit()
+
     physchem_data = await physchem_client.fetch_physchem_values(
         cruise_id=sample.cruise_id,
         utc_time=sample.utc_time,
