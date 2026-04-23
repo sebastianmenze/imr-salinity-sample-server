@@ -22,6 +22,52 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 
+def _sync_physchem_measurements(db: Session, sample: SalinitySample, physchem_data: dict) -> bool:
+    """
+    Upsert PSAL_LAB readings returned by PhysChem into the local sample_measurements table.
+    - Inserts a new row for any PhysChem reading not yet stored locally (identified by reading_id).
+    - Fills in a missing physchem_ordinal on existing rows where the reading_id now matches.
+    Returns True if any rows were written.
+    """
+    if not physchem_data:
+        return False
+
+    changed = False
+    existing_by_reading_id = {
+        m.physchem_reading_id: m
+        for m in sample.measurements
+        if m.physchem_reading_id
+    }
+
+    for entry in physchem_data.get("psal_lab_values", []):
+        reading_id = entry.get("reading_id")
+        value = entry.get("value")
+        if reading_id is None or value is None:
+            continue
+
+        rid_str = str(reading_id)
+
+        if rid_str in existing_by_reading_id:
+            row = existing_by_reading_id[rid_str]
+            if row.physchem_ordinal is None and entry.get("ordinal") is not None:
+                row.physchem_ordinal = entry["ordinal"]
+                changed = True
+        else:
+            db.add(SampleMeasurement(
+                sample_id=sample.id,
+                psal_lab=value,
+                physchem_reading_id=rid_str,
+                physchem_ordinal=entry.get("ordinal"),
+            ))
+            changed = True
+
+    if changed:
+        db.commit()
+        db.refresh(sample)
+
+    return changed
+
+
 @router.get("/measure/{sample_id}", response_class=HTMLResponse)
 async def measure_sample(request: Request, sample_id: uuid.UUID, db: Session = Depends(get_db)):
     """QR code lands here — shows sample metadata and measurement form."""
@@ -44,6 +90,8 @@ async def measure_sample(request: Request, sample_id: uuid.UUID, db: Session = D
         )
     except Exception:
         physchem_data = None
+
+    _sync_physchem_measurements(db, sample, physchem_data)
 
     return templates.TemplateResponse("measure.html", {
         "request": request,
