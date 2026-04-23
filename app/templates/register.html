@@ -40,9 +40,14 @@
         <h2>Sample Metadata</h2>
         <form method="post" action="/register/manual">
             <label>UTC Time (24h)</label>
-            <input type="datetime-local" name="utc_time" value="{{ now }}" required
-                   step="60" style="font-variant-numeric:tabular-nums"
-                   onchange="this.value=this.value.slice(0,16)">
+            <div style="display:flex; gap:8px; align-items:center">
+                <input type="date" id="utc_date" value="{{ now[:10] }}" required style="flex:1">
+                <input type="text" id="utc_time_str" value="{{ now[11:] }}"
+                       pattern="[0-2][0-9]:[0-5][0-9]" placeholder="HH:MM" required
+                       maxlength="5" style="width:80px; font-variant-numeric:tabular-nums"
+                       title="24-hour time HH:MM">
+            </div>
+            <input type="hidden" name="utc_time" id="utc_time_hidden">
 
             <div class="meta-grid">
                 <div>
@@ -117,6 +122,12 @@
 </div>
 
 <script>
+document.querySelector('form[action="/register/manual"]').addEventListener('submit', function () {
+    const d = document.getElementById('utc_date').value;
+    const t = document.getElementById('utc_time_str').value;
+    document.getElementById('utc_time_hidden').value = d + 'T' + t;
+});
+
 function showTab(name) {
     document.getElementById('panel-manual').style.display = name === 'manual' ? 'block' : 'none';
     document.getElementById('panel-bot').style.display   = name === 'bot'    ? 'block' : 'none';
