@@ -35,6 +35,39 @@ def _parse_json(r: httpx.Response) -> object:
         )
 
 
+def _mission_score(mission: dict, utc_time: Optional[datetime]) -> float:
+    """Score a mission by proximity of its time range to the sample. Lower is better."""
+    if utc_time is None:
+        return float("inf")
+    sample_t = utc_time.replace(tzinfo=None) if utc_time.tzinfo else utc_time
+
+    start_t = end_t = None
+    for key in ("timeStart", "dateStart"):
+        val = mission.get(key)
+        if val:
+            try:
+                start_t = datetime.fromisoformat(val.replace("Z", "+00:00")).replace(tzinfo=None)
+                break
+            except Exception:
+                pass
+    for key in ("timeEnd", "dateEnd"):
+        val = mission.get(key)
+        if val:
+            try:
+                end_t = datetime.fromisoformat(val.replace("Z", "+00:00")).replace(tzinfo=None)
+                break
+            except Exception:
+                pass
+
+    if start_t is None:
+        return float("inf")
+    if end_t and start_t <= sample_t <= end_t:
+        return 0.0
+    if end_t:
+        return min(abs((sample_t - start_t).total_seconds()), abs((sample_t - end_t).total_seconds())) / 3600
+    return abs((sample_t - start_t).total_seconds()) / 3600
+
+
 def _operation_score(
     op: dict,
     utc_time: Optional[datetime],
@@ -84,20 +117,39 @@ class PhysChemClient:
         editor_base = self.base_url.replace("-api-", "-editor-")
         return f"{editor_base}/mission/{mission_id}/operation/{operation_id}/instrument/{instrument_id}/parameter"
 
-    async def find_mission(self, cruise: str) -> Optional[dict]:
+    async def find_mission(
+        self,
+        cruise: Optional[str],
+        utc_time: Optional[datetime] = None,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
+    ) -> Optional[dict]:
+        params = {"cruise": cruise} if cruise else {}
         async with httpx.AsyncClient(timeout=30) as client:
             r = await client.get(
                 f"{self.base_url}/mission/list",
-                params={"cruise": cruise},
+                params=params,
                 headers=self._headers(),
             )
             logger.info(f"GET /mission/list → {r.status_code}: {r.text[:300]}")
             r.raise_for_status()
             missions = _parse_json(r)
-            if not missions:
-                logger.warning(f"No PhysChem mission found for cruise '{cruise}'")
-                return None
+
+        if not missions:
+            logger.warning(f"No PhysChem missions found" + (f" for cruise '{cruise}'" if cruise else ""))
+            return None
+
+        if cruise:
             return missions[0]
+
+        # No cruise ID — score all missions by time proximity and return the best
+        best = min(missions, key=lambda m: _mission_score(m, utc_time))
+        score = _mission_score(best, utc_time)
+        logger.info(
+            f"No cruise ID — best mission by time: id={best.get('id')} "
+            f"cruise={best.get('cruise')} score={score:.1f}h"
+        )
+        return best
 
     async def find_operation(
         self,
@@ -323,10 +375,10 @@ class PhysChemClient:
         Returns a dict with psal_values and psal_lab_values lists, or None if unavailable.
         """
         try:
-            if not self.is_configured() or not cruise_id:
+            if not self.is_configured():
                 return None
 
-            mission = await self.find_mission(cruise_id)
+            mission = await self.find_mission(cruise_id, utc_time=utc_time, latitude=latitude, longitude=longitude)
             if not mission:
                 return None
 
@@ -425,15 +477,13 @@ class PhysChemClient:
         if utc_time is None:
             return {"success": False, "message": "Sample has no UTC timestamp — edit the BTL table to add one before uploading"}
 
-        if not cruise_id:
-            return {"success": False, "message": "cruise_id required for PhysChem upload"}
-
         try:
-            mission = await self.find_mission(cruise_id)
+            mission = await self.find_mission(cruise_id, utc_time=utc_time, latitude=latitude, longitude=longitude)
             if not mission:
-                return {"success": False, "message": f"No PhysChem mission found for cruise '{cruise_id}'"}
+                label = f"cruise '{cruise_id}'" if cruise_id else "time/position"
+                return {"success": False, "message": f"No PhysChem mission found matching {label}"}
             mission_id = mission["id"]
-            logger.info(f"PhysChem mission {mission_id} for cruise {cruise_id}")
+            logger.info(f"PhysChem mission {mission_id} (cruise={mission.get('cruise')})")
 
             operation = await self.find_operation(mission_id, utc_time, latitude, longitude)
             if not operation:
