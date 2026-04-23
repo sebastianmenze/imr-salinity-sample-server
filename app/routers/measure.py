@@ -316,16 +316,16 @@ async def export_samples_csv(db: Session = Depends(get_db)):
     fields = [
         "id", "utc_time", "latitude", "longitude", "depth_m",
         "platform_id", "cruise_id", "station_id", "cast_number", "bottle_number",
-        "psal_1", "psal_2", "psal_lab", "measured_by", "measured_at",
-        "status", "notes", "source",
-        "physchem_upload_id", "physchem_operation_id", "created_at",
+        "psal_1", "psal_2", "status", "source", "created_at",
+        "measurement_ordinal", "psal_lab", "measured_by", "measured_at",
+        "measurement_notes", "physchem_reading_id", "physchem_operation_id",
     ]
 
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerow(fields)
     for s in samples:
-        writer.writerow([
+        meta = [
             str(s.id),
             s.utc_time.strftime("%Y-%m-%dT%H:%M:%SZ") if s.utc_time else "",
             s.latitude, s.longitude, s.depth_m,
@@ -333,16 +333,23 @@ async def export_samples_csv(db: Session = Depends(get_db)):
             s.cast_number or "", s.bottle_number or "",
             s.psal_1 if s.psal_1 is not None else "",
             s.psal_2 if s.psal_2 is not None else "",
-            s.psal_lab if s.psal_lab is not None else "",
-            s.measured_by or "",
-            s.measured_at.strftime("%Y-%m-%dT%H:%M:%SZ") if s.measured_at else "",
             s.status.value,
-            s.notes or "",
             s.source or "",
-            s.physchem_upload_id or "",
-            s.physchem_operation_id or "",
             s.created_at.strftime("%Y-%m-%dT%H:%M:%SZ") if s.created_at else "",
-        ])
+        ]
+        if s.measurements:
+            for m in s.measurements:
+                writer.writerow(meta + [
+                    m.physchem_ordinal if m.physchem_ordinal is not None else "",
+                    m.psal_lab,
+                    m.measured_by or "",
+                    m.measured_at.strftime("%Y-%m-%dT%H:%M:%SZ") if m.measured_at else "",
+                    m.notes or "",
+                    m.physchem_reading_id or "",
+                    s.physchem_operation_id or "",
+                ])
+        else:
+            writer.writerow(meta + ["", "", "", "", "", "", s.physchem_operation_id or ""])
 
     buf.seek(0)
     filename = f"salinity_samples_{datetime.utcnow().strftime('%Y%m%d_%H%M')}.csv"
