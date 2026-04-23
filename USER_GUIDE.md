@@ -54,6 +54,9 @@ Use this for samples taken without a CTD cast (e.g. bucket samples, underway sam
 
 ### Printing Labels
 
+![Example label](images/labelexample.png)
+*Example label — "Depth" and "Bottle" lines are printed in bold for quick identification.*
+
 After registration the system shows a **View Label** link and a **Download Label PDF** button.
 
 - The PDF is sized for the **Phomemo M110** label printer (50 × 50 mm).
@@ -61,6 +64,9 @@ After registration the system shows a **View Label** link and a **Download Label
 - Print immediately and attach the label to the sample bottle before it leaves the CTD deck.
 
 See **Appendix — Setting Up the Phomemo M110 on Windows** at the bottom of this guide for first-time printer setup.
+
+![Phomemo M110 label printer](images/printer.png)
+*Phomemo M110 connected via USB/CSBC.*
 
 ---
 

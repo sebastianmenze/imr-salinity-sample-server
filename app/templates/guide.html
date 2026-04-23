@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}User Guide — IMR Salinity Tracker{% endblock %}
+{% block subtitle %}User Guide{% endblock %}
+{% block content %}
+<style>
+.guide h1 { font-size:1.3rem; color:#003366; margin:24px 0 10px; padding-bottom:6px; border-bottom:2px solid #e2e8f0; }
+.guide h2 { font-size:1.1rem; color:#003366; margin:22px 0 8px; padding-bottom:5px; border-bottom:1px solid #e2e8f0; }
+.guide h3 { font-size:0.95rem; color:#2d3748; margin:16px 0 6px; }
+.guide p  { font-size:0.9rem; line-height:1.65; color:#2d3748; margin-bottom:10px; }
+.guide ul, .guide ol { font-size:0.9rem; line-height:1.65; color:#2d3748; margin:0 0 10px 20px; }
+.guide li { margin-bottom:4px; }
+.guide code { font-family:monospace; background:#f0f4f8; padding:1px 5px; border-radius:4px; font-size:0.82rem; color:#c53030; }
+.guide pre { background:#f0f4f8; border-radius:8px; padding:14px; overflow-x:auto; margin-bottom:12px; }
+.guide pre code { background:none; color:#1a202c; padding:0; font-size:0.82rem; }
+.guide blockquote { border-left:4px solid #90cdf4; background:#ebf8ff; margin:12px 0; padding:10px 14px; border-radius:0 6px 6px 0; }
+.guide blockquote p { color:#2b6cb0; margin:0; font-size:0.85rem; }
+.guide table { width:100%; border-collapse:collapse; font-size:0.85rem; margin-bottom:14px; }
+.guide th { background:#003366; color:white; padding:8px 10px; text-align:left; }
+.guide td { padding:7px 10px; border-bottom:1px solid #e2e8f0; }
+.guide tr:nth-child(even) td { background:#f7fafc; }
+.guide img { max-width:100%; border-radius:8px; margin:12px 0; box-shadow:0 2px 8px rgba(0,0,0,0.12); }
+.guide em { display:block; font-size:0.78rem; color:#718096; margin-top:-8px; margin-bottom:10px; }
+.guide hr { border:none; border-top:2px solid #e2e8f0; margin:24px 0; }
+.guide strong { color:#1a202c; }
+</style>
+<div class="card guide">
+    {{ content | safe }}
+</div>
+{% endblock %}

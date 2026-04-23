@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 import logging
 
 from app.database import create_tables
-from app.routers import register, measure, auth
+from app.routers import register, measure, auth, guide
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,3 +31,4 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(register.router, tags=["registration"])
 app.include_router(measure.router, tags=["measurement"])
 app.include_router(auth.router, tags=["auth"])
+app.include_router(guide.router, tags=["guide"])
