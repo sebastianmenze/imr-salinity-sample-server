@@ -107,9 +107,10 @@
             <div id="drop-zone" class="drop-zone">
                 <div class="drop-icon">📁</div>
                 <div class="drop-label">Drop BTL file here</div>
-                <div class="drop-sub">or click to browse</div>
+                <div class="drop-sub">or click to browse — one file at a time</div>
                 <div class="drop-filename" id="drop-filename" style="display:none"></div>
             </div>
+            <div id="drop-error" style="display:none; color:#c53030; font-size:0.85rem; margin-top:8px; font-weight:600"></div>
         </form>
         <div class="spinner" id="spinner">
             <div style="font-size:1.5rem">⏳</div>
@@ -165,9 +166,16 @@ function showTab(name) {
 
     zone.addEventListener('drop', e => {
         e.preventDefault();
+        zone.classList.remove('drag-over');
         const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            // Assign to input so FormData picks it up
+        const errEl = document.getElementById('drop-error');
+        if (files.length > 1) {
+            errEl.textContent = '⚠ Please drop one file at a time.';
+            errEl.style.display = 'block';
+            return;
+        }
+        errEl.style.display = 'none';
+        if (files.length === 1) {
             const dt = new DataTransfer();
             dt.items.add(files[0]);
             input.files = dt.files;
