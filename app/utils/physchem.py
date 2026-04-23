@@ -80,6 +80,10 @@ class PhysChemClient:
             "Accept": "*/*",
         }
 
+    def _editor_url(self, mission_id, operation_id, instrument_id) -> str:
+        editor_base = self.base_url.replace("-api-", "-editor-")
+        return f"{editor_base}/mission/{mission_id}/operation/{operation_id}/instrument/{instrument_id}/parameter"
+
     async def find_mission(self, cruise: str) -> Optional[dict]:
         async with httpx.AsyncClient(timeout=30) as client:
             r = await client.get(
@@ -144,6 +148,17 @@ class PhysChemClient:
         logger.warning(f"No BOT instrument found on operation {operation_id}")
         return None
 
+    async def _get_parameter_readings(self, parameter_id: int) -> list:
+        """Fetch all readings for a parameter."""
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.get(
+                f"{self.base_url}/parameter/{parameter_id}/reading/list",
+                headers=self._headers(),
+            )
+            logger.info(f"GET /parameter/{parameter_id}/reading/list → {r.status_code}")
+            r.raise_for_status()
+            return _parse_json(r)
+
     async def find_or_create_psal_parameter(
         self,
         instrument_id: int,
@@ -151,7 +166,14 @@ class PhysChemClient:
         psal_value: Optional[float] = None,
         value_datetime: Optional[datetime] = None,
     ) -> dict:
-        """Return existing S LAB parameter, or create one with the reading embedded."""
+        """
+        Return a PSAL_LAB (S LAB) parameter to write a reading to.
+
+        - If no S LAB parameter exists: create one with ordinal=1.
+        - If some exist but one lacks a reading at sample_number: return that one.
+        - If all existing S LAB params already have a reading at sample_number:
+          create a new one with ordinal = max_existing_ordinal + 1.
+        """
         async with httpx.AsyncClient(timeout=30) as client:
             r = await client.get(
                 f"{self.base_url}/instrument/{instrument_id}/parameter/list",
@@ -161,17 +183,44 @@ class PhysChemClient:
             r.raise_for_status()
             params = _parse_json(r)
 
-        for p in params:
-            if p.get("suppliedParameterName") == "S LAB":
-                logger.info(f"Reusing existing S LAB parameter {p['id']} on instrument {instrument_id}")
-                return p
+        slab_params = [p for p in params if p.get("suppliedParameterName") == "S LAB"]
 
-        # Build creation payload — embed reading if data is provided
+        next_ordinal = 1
+        if slab_params:
+            if sample_number is not None:
+                # Check each existing S LAB parameter for a reading at this sampleNumber
+                for p in slab_params:
+                    try:
+                        readings = await self._get_parameter_readings(p["id"])
+                        has_reading = any(rd.get("sampleNumber") == sample_number for rd in readings)
+                        if not has_reading:
+                            logger.info(
+                                f"Reusing S LAB parameter {p['id']} "
+                                f"(no reading yet at sampleNumber {sample_number})"
+                            )
+                            return p
+                    except Exception as e:
+                        logger.warning(f"Could not check readings for parameter {p['id']}: {e}")
+                        return p
+
+                # All existing S LAB params have a reading at this sampleNumber → increment ordinal
+                max_ordinal = max(p.get("ordinal", 1) for p in slab_params)
+                next_ordinal = max_ordinal + 1
+                logger.info(
+                    f"All S LAB parameters already have a reading at sampleNumber {sample_number}; "
+                    f"creating new parameter with ordinal {next_ordinal}"
+                )
+            else:
+                # No sample_number to check — return the first existing S LAB parameter
+                logger.info(f"Reusing existing S LAB parameter {slab_params[0]['id']} (no sample_number to check)")
+                return slab_params[0]
+
+        # Create a new PSAL_LAB parameter
         next_param_number = max((p.get("parameterNumber", 0) for p in params), default=0) + 1
         payload = {
             "parameterNumber": next_param_number,
             "parameterCode": "PSAL_LAB",
-            "ordinal": 1,
+            "ordinal": next_ordinal,
             "suppliedParameterName": "S LAB",
             "units": "Dmnless",
             "processingLevel": "L0",
@@ -184,27 +233,17 @@ class PhysChemClient:
                 "valueDec": psal_value,
                 "quality": "1",
             }]
+
         logger.info(f"Creating PSAL_LAB parameter on instrument {instrument_id} with payload: {payload}")
-        try:
-            async with httpx.AsyncClient(timeout=30) as client:
-                r = await client.post(
-                    f"{self.base_url}/instrument/{instrument_id}/parameter",
-                    json=payload,
-                    headers=self._headers(),
-                )
-                logger.info(f"POST /instrument/{instrument_id}/parameter → {r.status_code}: {r.text[:500]}")
-                r.raise_for_status()
-                return _parse_json(r)
-        except httpx.HTTPStatusError as exc:
-            logger.warning(
-                f"PSAL_LAB parameter creation failed (HTTP {exc.response.status_code}) — "
-                f"falling back to first existing PSAL parameter on instrument {instrument_id}"
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.post(
+                f"{self.base_url}/instrument/{instrument_id}/parameter",
+                json=payload,
+                headers=self._headers(),
             )
-            for p in params:
-                if p.get("parameterCode") == "PSAL":
-                    logger.info(f"Using fallback PSAL parameter {p['id']} ({p.get('suppliedParameterName')})")
-                    return p
-            raise ValueError(f"No PSAL or PSAL_LAB parameter available on instrument {instrument_id}") from exc
+            logger.info(f"POST /instrument/{instrument_id}/parameter → {r.status_code}: {r.text[:500]}")
+            r.raise_for_status()
+            return _parse_json(r)
 
     async def find_sample_number_by_depth(
         self, instrument_id: int, depth_m: float
@@ -223,15 +262,7 @@ class PhysChemClient:
             logger.warning(f"No PRES parameter on instrument {instrument_id}, cannot match by depth")
             return None
 
-        async with httpx.AsyncClient(timeout=30) as client:
-            r = await client.get(
-                f"{self.base_url}/parameter/{pres_param['id']}/reading/list",
-                headers=self._headers(),
-            )
-            logger.info(f"GET /parameter/{pres_param['id']}/reading/list → {r.status_code}: {r.text[:500]}")
-            r.raise_for_status()
-            readings = _parse_json(r)
-
+        readings = await self._get_parameter_readings(pres_param["id"])
         if not readings:
             logger.warning(f"No PRES readings on instrument {instrument_id}, cannot match by depth")
             return None
@@ -252,18 +283,11 @@ class PhysChemClient:
         value_datetime: datetime,
     ) -> dict:
         """Create a reading for sample_number; skip if one already exists."""
-        async with httpx.AsyncClient(timeout=30) as client:
-            r = await client.get(
-                f"{self.base_url}/parameter/{parameter_id}/reading/list",
-                headers=self._headers(),
-            )
-            logger.info(f"GET /parameter/{parameter_id}/reading/list → {r.status_code}: {r.text[:500]}")
-            r.raise_for_status()
-            readings = _parse_json(r)
+        readings = await self._get_parameter_readings(parameter_id)
 
         existing = next((rd for rd in readings if rd.get("sampleNumber") == sample_number), None)
         if existing:
-            logger.warning(
+            logger.info(
                 f"Reading already exists for parameter {parameter_id} sampleNumber {sample_number} "
                 f"(id={existing['id']}, valueDec={existing.get('valueDec')}) — not overwriting"
             )
@@ -284,6 +308,97 @@ class PhysChemClient:
             logger.info(f"POST /parameter/{parameter_id}/reading → {r.status_code}: {r.text[:500]}")
             r.raise_for_status()
             return _parse_json(r)
+
+    async def fetch_physchem_values(
+        self,
+        cruise_id: Optional[str],
+        utc_time: Optional[datetime],
+        latitude: Optional[float],
+        longitude: Optional[float],
+        depth_m: float,
+        bottle_number: Optional[str] = None,
+    ) -> Optional[dict]:
+        """
+        Look up existing PSAL (CTD sensor) and PSAL_LAB readings in PhysChem for a sample.
+        Returns a dict with psal_values and psal_lab_values lists, or None if unavailable.
+        """
+        if not self.is_configured() or not cruise_id:
+            return None
+
+        try:
+            mission = await self.find_mission(cruise_id)
+            if not mission:
+                return None
+
+            operation = await self.find_operation(mission["id"], utc_time, latitude, longitude)
+            if not operation:
+                return None
+
+            instrument = await self.find_bot_instrument(operation["id"])
+            if not instrument:
+                return None
+
+            instrument_id = instrument["id"]
+
+            sample_num = await self.find_sample_number_by_depth(instrument_id, depth_m)
+            if sample_num is None and bottle_number:
+                try:
+                    sample_num = int(bottle_number)
+                except ValueError:
+                    pass
+
+            # Fetch all parameters on the instrument
+            async with httpx.AsyncClient(timeout=30) as client:
+                r = await client.get(
+                    f"{self.base_url}/instrument/{instrument_id}/parameter/list",
+                    headers=self._headers(),
+                )
+                r.raise_for_status()
+                params = _parse_json(r)
+
+            psal_values = []
+            psal_lab_values = []
+
+            for p in params:
+                code = p.get("parameterCode", "")
+                name = p.get("suppliedParameterName", "")
+
+                if code in ("PSAL", "PSAL_LAB") or name == "S LAB":
+                    try:
+                        readings = await self._get_parameter_readings(p["id"])
+                        reading = (
+                            next((rd for rd in readings if rd.get("sampleNumber") == sample_num), None)
+                            if sample_num is not None
+                            else None
+                        )
+                        entry = {
+                            "parameter_id": p["id"],
+                            "ordinal": p.get("ordinal"),
+                            "supplied_name": name,
+                            "value": float(reading["valueDec"]) if reading and reading.get("valueDec") is not None else None,
+                            "reading_id": reading.get("id") if reading else None,
+                            "sample_number": reading.get("sampleNumber") if reading else None,
+                        }
+                        if code == "PSAL":
+                            psal_values.append(entry)
+                        else:
+                            psal_lab_values.append(entry)
+                    except Exception as e:
+                        logger.warning(f"Could not fetch readings for parameter {p['id']}: {e}")
+
+            return {
+                "sample_number": sample_num,
+                "mission_id": mission["id"],
+                "operation_id": operation["id"],
+                "instrument_id": instrument_id,
+                "psal_values": psal_values,
+                "psal_lab_values": psal_lab_values,
+                "physchem_url": self._editor_url(mission["id"], operation["id"], instrument_id),
+            }
+
+        except Exception as e:
+            logger.warning(f"fetch_physchem_values failed: {e}")
+            return None
 
     async def upload_measurement(
         self,
@@ -359,12 +474,6 @@ class PhysChemClient:
             reading_id = reading.get("id", "")
             logger.info(f"PhysChem reading {reading_id}: PSAL_LAB={psal_lab}")
 
-            editor_base = self.base_url.replace("-api-", "-editor-")
-            physchem_url = (
-                f"{editor_base}/mission/{mission_id}/operation/{operation_id}"
-                f"/instrument/{instrument_id}/parameter"
-            )
-
             return {
                 "success": True,
                 "upload_id": str(reading_id),
@@ -373,7 +482,7 @@ class PhysChemClient:
                 "instrument_id": instrument_id,
                 "parameter_id": parameter_id,
                 "reading_id": reading_id,
-                "physchem_url": physchem_url,
+                "physchem_url": self._editor_url(mission_id, operation_id, instrument_id),
             }
 
         except httpx.HTTPStatusError as e:

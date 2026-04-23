@@ -35,24 +35,41 @@
             <div class="label">Depth</div>
             <div class="value">{{ sample.depth_m }} m</div>
         </div>
-        {% if sample.psal_1 %}
-        <div class="meta-item">
-            <div class="label">PSAL Sensor 1</div>
-            <div class="value">{{ "%.4f"|format(sample.psal_1) }}</div>
-        </div>
-        {% endif %}
-        {% if sample.psal_2 %}
-        <div class="meta-item">
-            <div class="label">PSAL Sensor 2</div>
-            <div class="value">{{ "%.4f"|format(sample.psal_2) }}</div>
-        </div>
-        {% endif %}
-        <div class="meta-item" style="border: 2px solid #003366;">
-            <div class="label">PSAL_LAB ✓</div>
-            <div class="value" style="color:#003366; font-size:1.2rem">
-                {{ "%.4f"|format(sample.psal_lab) }}
+        {% if physchem_data %}
+            {% for psal in physchem_data.psal_values %}
+            <div class="meta-item">
+                <div class="label">{{ psal.supplied_name or 'CTD PSAL' }} (ordinal {{ psal.ordinal }})</div>
+                <div class="value">{{ "%.4f"|format(psal.value) if psal.value is not none else '—' }}</div>
             </div>
-        </div>
+            {% endfor %}
+            {% for slab in physchem_data.psal_lab_values %}
+            <div class="meta-item" style="border: 2px solid #003366;">
+                <div class="label">PSAL_LAB ordinal {{ slab.ordinal }} ✓</div>
+                <div class="value" style="color:#003366; font-size:1.2rem">
+                    {{ "%.4f"|format(slab.value) if slab.value is not none else '—' }}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            {% if sample.psal_1 %}
+            <div class="meta-item">
+                <div class="label">PSAL Sensor 1</div>
+                <div class="value">{{ "%.4f"|format(sample.psal_1) }}</div>
+            </div>
+            {% endif %}
+            {% if sample.psal_2 %}
+            <div class="meta-item">
+                <div class="label">PSAL Sensor 2</div>
+                <div class="value">{{ "%.4f"|format(sample.psal_2) }}</div>
+            </div>
+            {% endif %}
+            <div class="meta-item" style="border: 2px solid #003366;">
+                <div class="label">PSAL_LAB ✓</div>
+                <div class="value" style="color:#003366; font-size:1.2rem">
+                    {{ "%.4f"|format(sample.psal_lab) }}
+                </div>
+            </div>
+        {% endif %}
         <div class="meta-item">
             <div class="label">Status</div>
             <div class="value">

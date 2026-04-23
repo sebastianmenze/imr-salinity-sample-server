@@ -33,11 +33,21 @@ async def measure_sample(request: Request, sample_id: uuid.UUID, db: Session = D
         sample.status = SampleStatus.in_lab
         db.commit()
 
+    physchem_data = await physchem_client.fetch_physchem_values(
+        cruise_id=sample.cruise_id,
+        utc_time=sample.utc_time,
+        latitude=sample.latitude,
+        longitude=sample.longitude,
+        depth_m=sample.depth_m,
+        bottle_number=sample.bottle_number,
+    )
+
     return templates.TemplateResponse("measure.html", {
         "request": request,
         "sample": sample,
         "physchem_authenticated": azure_auth.is_authenticated(),
         "physchem_token_status": azure_auth.get_token_status(),
+        "physchem_data": physchem_data,
     })
 
 
@@ -90,19 +100,37 @@ async def submit_measurement(
 
     db.refresh(sample)
     if upload_result["success"]:
+        physchem_data = await physchem_client.fetch_physchem_values(
+            cruise_id=sample.cruise_id,
+            utc_time=sample.utc_time,
+            latitude=sample.latitude,
+            longitude=sample.longitude,
+            depth_m=sample.depth_m,
+            bottle_number=sample.bottle_number,
+        )
         return templates.TemplateResponse("measure_success.html", {
             "request": request,
             "sample": sample,
             "upload_result": upload_result,
+            "physchem_data": physchem_data,
         })
 
     # Upload failed — stay on measure page so user can retry
+    physchem_data = await physchem_client.fetch_physchem_values(
+        cruise_id=sample.cruise_id,
+        utc_time=sample.utc_time,
+        latitude=sample.latitude,
+        longitude=sample.longitude,
+        depth_m=sample.depth_m,
+        bottle_number=sample.bottle_number,
+    )
     return templates.TemplateResponse("measure.html", {
         "request": request,
         "sample": sample,
         "physchem_authenticated": azure_auth.is_authenticated(),
         "physchem_token_status": azure_auth.get_token_status(),
         "upload_error": upload_result.get("message", "Unknown error"),
+        "physchem_data": physchem_data,
     })
 
 
@@ -144,19 +172,37 @@ async def retry_physchem_upload(
         sample.physchem_operation_id = str(upload_result.get("operation_id", ""))
         db.commit()
         db.refresh(sample)
+        physchem_data = await physchem_client.fetch_physchem_values(
+            cruise_id=sample.cruise_id,
+            utc_time=sample.utc_time,
+            latitude=sample.latitude,
+            longitude=sample.longitude,
+            depth_m=sample.depth_m,
+            bottle_number=sample.bottle_number,
+        )
         return templates.TemplateResponse("measure_success.html", {
             "request": request,
             "sample": sample,
             "upload_result": upload_result,
+            "physchem_data": physchem_data,
         })
 
     db.refresh(sample)
+    physchem_data = await physchem_client.fetch_physchem_values(
+        cruise_id=sample.cruise_id,
+        utc_time=sample.utc_time,
+        latitude=sample.latitude,
+        longitude=sample.longitude,
+        depth_m=sample.depth_m,
+        bottle_number=sample.bottle_number,
+    )
     return templates.TemplateResponse("measure.html", {
         "request": request,
         "sample": sample,
         "physchem_authenticated": azure_auth.is_authenticated(),
         "physchem_token_status": azure_auth.get_token_status(),
         "upload_error": upload_result.get("message", "Unknown error"),
+        "physchem_data": physchem_data,
     })
 
 

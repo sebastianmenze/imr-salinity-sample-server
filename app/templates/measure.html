@@ -117,6 +117,31 @@
 </div>
 {% endif %}
 
+{% if physchem_data %}
+<div class="card">
+    <h2>📊 PhysChem Values</h2>
+    <div class="meta-grid">
+        {% for psal in physchem_data.psal_values %}
+        <div class="meta-item">
+            <div class="label">{{ psal.supplied_name or 'CTD PSAL' }} (ordinal {{ psal.ordinal }})</div>
+            <div class="value">{{ "%.4f"|format(psal.value) if psal.value is not none else '—' }}</div>
+        </div>
+        {% endfor %}
+        {% for slab in physchem_data.psal_lab_values %}
+        <div class="meta-item" style="border: 2px solid #003366;">
+            <div class="label">PSAL_LAB (ordinal {{ slab.ordinal }})</div>
+            <div class="value" style="color:#003366; font-weight:600">
+                {{ "%.4f"|format(slab.value) if slab.value is not none else '—' }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div style="font-size:0.8rem; margin-top:8px">
+        <a href="{{ physchem_data.physchem_url }}" target="_blank" style="color:#003366">View in PhysChem →</a>
+    </div>
+</div>
+{% endif %}
+
 <div style="display:flex; gap:8px; margin-bottom:16px">
     <a href="/label/{{ sample.id }}" class="btn btn-secondary" style="flex:1; text-decoration:none; text-align:center">
         🏷️ View Label
