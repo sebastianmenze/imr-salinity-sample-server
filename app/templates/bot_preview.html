@@ -113,10 +113,7 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-colo
                                {% if has_time %}checked{% else %}disabled title="Set UTC time to enable"{% endif %}>
                     </td>
                     <td><strong>{{ b.bottle_number or loop.index }}</strong></td>
-                    <td>
-                        <input class="edit-input" type="number" step="0.1"
-                               data-field="depth_m" value="{{ b.depth_m }}" style="width:70px">
-                    </td>
+                    <td>{{ b.depth_m }}</td>
                     <td style="color:#4a5568">{% if b.psal_1 %}{{ "%.4f"|format(b.psal_1) }}{% else %}—{% endif %}</td>
                     <td style="color:#4a5568">{% if b.psal_2 %}{{ "%.4f"|format(b.psal_2) }}{% else %}—{% endif %}</td>
                     <td>
@@ -126,24 +123,10 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-colo
                         {% else %}—{% endif %}
                     </td>
                     <td>
-                        <input class="edit-input {{ '' if has_time else 'missing' }}" type="datetime-local"
-                               data-field="utc_time"
-                               value="{{ b.utc_time[:16] if has_time else '' }}"
-                               style="width:160px">
-                        {% if not has_time %}
-                        <div class="warn-no-time">⚠ required</div>
-                        {% endif %}
+                        {% if has_time %}{{ b.utc_time[:16] }}{% else %}<span class="warn-no-time">⚠ missing</span>{% endif %}
                     </td>
-                    <td>
-                        <input class="edit-input" type="number" step="0.0001"
-                               data-field="latitude" value="{{ '%.4f'|format(b.latitude) if b.latitude is not none else '' }}"
-                               style="width:90px">
-                    </td>
-                    <td>
-                        <input class="edit-input" type="number" step="0.0001"
-                               data-field="longitude" value="{{ '%.4f'|format(b.longitude) if b.longitude is not none else '' }}"
-                               style="width:90px">
-                    </td>
+                    <td>{{ '%.4f'|format(b.latitude) if b.latitude is not none else '—' }}</td>
+                    <td>{{ '%.4f'|format(b.longitude) if b.longitude is not none else '—' }}</td>
                 </tr>
                 {% endfor %}
                 </tbody>
@@ -151,7 +134,7 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-colo
         </div>
 
         <div style="font-size:0.78rem; color:#718096; margin-top:8px">
-            * Rows without UTC time cannot be registered. Edit the value to enable the checkbox.
+            * Rows without UTC time cannot be registered.
         </div>
 
         <button type="submit" class="btn-register" id="reg-btn" disabled>
@@ -166,15 +149,10 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-colo
 
 <script>
 (function () {
-    const form      = document.getElementById('confirm-form');
-    const allCb     = document.getElementById('select-all');
-    const badge     = document.getElementById('sel-count');
-    const regBtn    = document.getElementById('reg-btn');
-    const regCount  = document.getElementById('reg-count');
-    const jsonInput = document.getElementById('bottles_json_input');
-
-    // Parse original bottles data
-    let bottles = JSON.parse(jsonInput.value);
+    const allCb    = document.getElementById('select-all');
+    const badge    = document.getElementById('sel-count');
+    const regBtn   = document.getElementById('reg-btn');
+    const regCount = document.getElementById('reg-count');
 
     function getCbs() { return document.querySelectorAll('.bottle-cb:not([disabled])'); }
 
@@ -188,19 +166,6 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-colo
         allCb.checked = n > 0 && n === cbs.length;
     }
 
-    // When a time input changes, enable/disable the checkbox on that row
-    document.querySelectorAll('input[data-field="utc_time"]').forEach(input => {
-        input.addEventListener('input', () => {
-            const row = input.closest('tr');
-            const cb  = row.querySelector('.bottle-cb');
-            const hasTime = input.value.trim() !== '';
-            cb.disabled = !hasTime;
-            if (!hasTime) cb.checked = false;
-            input.classList.toggle('missing', !hasTime);
-            updateCount();
-        });
-    });
-
     allCb.addEventListener('change', () => {
         getCbs().forEach(cb => cb.checked = allCb.checked);
         updateCount();
@@ -209,26 +174,6 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-colo
     document.querySelectorAll('.bottle-cb').forEach(cb =>
         cb.addEventListener('change', updateCount)
     );
-
-    // Before submit: collect edited values into bottles_json
-    form.addEventListener('submit', e => {
-        document.querySelectorAll('.bottle-row').forEach(row => {
-            const idx = parseInt(row.dataset.idx);
-            const b = bottles.find(b => b.idx === idx);
-            if (!b) return;
-
-            row.querySelectorAll('.edit-input').forEach(inp => {
-                const field = inp.dataset.field;
-                const val   = inp.value.trim();
-                if (field === 'utc_time') {
-                    b.utc_time = val ? val + ':00' : null;
-                } else if (field === 'depth_m' || field === 'latitude' || field === 'longitude') {
-                    b[field] = val !== '' ? parseFloat(val) : null;
-                }
-            });
-        });
-        jsonInput.value = JSON.stringify(bottles);
-    });
 
     updateCount();
 })();
