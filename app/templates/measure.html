@@ -301,6 +301,23 @@ function showPastePanel() {
     document.getElementById('paste-panel').style.display = 'block';
 }
 
+// Comma-to-dot normalisation for PSAL_LAB inputs
+document.querySelectorAll('input[name="psal_lab"]').forEach(function(input) {
+    input.addEventListener('input', function() {
+        const pos = this.selectionStart;
+        const hadComma = this.value.includes(',');
+        this.value = this.value.replace(',', '.');
+        if (hadComma) this.setSelectionRange(pos, pos);
+    });
+    input.addEventListener('blur', function() {
+        const v = parseFloat(this.value);
+        if (!isNaN(v)) this.value = v.toFixed(4);
+    });
+    input.closest('form').addEventListener('submit', function() {
+        input.value = input.value.replace(',', '.');
+    });
+});
+
 // Live countdown for token expiry
 (function () {
     const el = document.getElementById('token-countdown');
