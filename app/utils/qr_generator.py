@@ -75,7 +75,7 @@ def generate_label_pdf(
     right_col_x = w / 2 + gap / 2
     right_col_w = w / 2 - margin_right - gap / 2
 
-    UUID_SZ, UUID_LD = 4.5, 5.5
+    UUID_SZ, UUID_LD = 5.0, 6.0
     uuid_lines  = [sample_id[:18], sample_id[18:]]
     uuid_height = len(uuid_lines) * UUID_LD
 
@@ -121,7 +121,7 @@ def generate_label_pdf(
 
     # UUID — two lines below QR code, centred in right column
     c.setFont("Helvetica", UUID_SZ)
-    c.setFillColorRGB(0.4, 0.4, 0.4)
+    c.setFillColorRGB(0, 0, 0)
     for i, uid_line in enumerate(uuid_lines):
         line_y = margin_bottom + (len(uuid_lines) - 1 - i) * UUID_LD
         c.drawCentredString(right_col_x + right_col_w / 2, line_y, uid_line)
