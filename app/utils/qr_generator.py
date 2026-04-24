@@ -75,16 +75,16 @@ def generate_label_pdf(
     right_col_x = w / 2 + gap / 2
     right_col_w = w / 2 - margin_right - gap / 2
 
-    UUID_SZ, UUID_LD = 5.0, 6.0
+    # Build metadata lines — 7pt throughout, no UUID here
+    SZ, LD = 7.0, 8.5
+    UUID_SZ, UUID_LD = SZ, LD
+
     uuid_lines  = [sample_id[:18], sample_id[18:]]
     uuid_height = len(uuid_lines) * UUID_LD
 
     # QR sits above the UUID block
     qr_size = min(right_col_w, h - margin_top - margin_bottom - uuid_height - 1.5 * rl_mm)
     qr_y    = margin_bottom + uuid_height + 1.0 * rl_mm
-
-    # Build metadata lines — 7pt throughout, no UUID here
-    SZ, LD = 7.0, 8.5
     time_str = utc_time.strftime("%Y-%m-%d %H:%M UTC")
     lat_str  = f"{latitude:.4f}°N"  if latitude  >= 0 else f"{abs(latitude):.4f}°S"
     lon_str  = f"{longitude:.4f}°E" if longitude >= 0 else f"{abs(longitude):.4f}°W"
