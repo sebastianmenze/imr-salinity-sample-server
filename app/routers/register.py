@@ -192,11 +192,14 @@ async def view_label(request: Request, sample_id: uuid.UUID, db: Session = Depen
 
 
 @router.get("/label/{sample_id}/pdf")
-async def download_label_pdf(sample_id: uuid.UUID, db: Session = Depends(get_db)):
+async def download_label_pdf(request: Request, sample_id: uuid.UUID, db: Session = Depends(get_db)):
     from fastapi.responses import Response
     sample = db.query(SalinitySample).filter(SalinitySample.id == sample_id).first()
     if not sample:
         raise HTTPException(status_code=404, detail="Sample not found")
+
+    base = str(request.base_url).rstrip("/")
+    label_url = f"{base}/measure/{sample.id}"
 
     pdf_bytes = generate_label_pdf(
         sample_id=str(sample.id),
@@ -205,7 +208,7 @@ async def download_label_pdf(sample_id: uuid.UUID, db: Session = Depends(get_db)
         longitude=sample.longitude,
         depth_m=sample.depth_m,
         platform_id=sample.platform_id,
-        label_url=sample.label_url,
+        label_url=label_url,
         cruise_id=sample.cruise_id,
         station_id=sample.station_id,
         cast_number=sample.cast_number,
