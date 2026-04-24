@@ -62,57 +62,69 @@ def generate_label_pdf(
     """
     buf = io.BytesIO()
 
-    w = LABEL_WIDTH_MM  * rl_mm   # 141.7 pt
-    h = LABEL_HEIGHT_MM * rl_mm   # 141.7 pt
-    margin = 2.0 * rl_mm
+    w = LABEL_WIDTH_MM  * rl_mm
+    h = LABEL_HEIGHT_MM * rl_mm
 
-    # QR code: right 50%, centred vertically
-    gap     = 1.5 * rl_mm
-    qr_size = w / 2 - margin - gap / 2
-    qr_x    = w / 2 + gap / 2
-    qr_y    = (h - qr_size) / 2
+    margin_left   = 0.8 * rl_mm
+    margin_right  = 1.0 * rl_mm
+    margin_top    = 1.0 * rl_mm
+    margin_bottom = 1.0 * rl_mm
+    gap           = 1.5 * rl_mm   # gap between text and QR columns
 
-    # Text column: left 50%
-    text_w  = w / 2 - margin - gap / 2
+    # Right column geometry (QR + UUID underneath)
+    right_col_x = w / 2 + gap / 2
+    right_col_w = w / 2 - margin_right - gap / 2
 
-    # Build metadata lines — uniform 7pt throughout
+    UUID_SZ, UUID_LD = 4.5, 5.5
+    uuid_lines  = [sample_id[:18], sample_id[18:]]
+    uuid_height = len(uuid_lines) * UUID_LD
+
+    # QR sits above the UUID block
+    qr_size = min(right_col_w, h - margin_top - margin_bottom - uuid_height - 1.5 * rl_mm)
+    qr_y    = margin_bottom + uuid_height + 1.0 * rl_mm
+
+    # Build metadata lines — 7pt throughout, no UUID here
     SZ, LD = 7.0, 8.5
     time_str = utc_time.strftime("%Y-%m-%d %H:%M UTC")
     lat_str  = f"{latitude:.4f}°N"  if latitude  >= 0 else f"{abs(latitude):.4f}°S"
     lon_str  = f"{longitude:.4f}°E" if longitude >= 0 else f"{abs(longitude):.4f}°W"
 
     lines = [
-        ("IMR Salinity Sample",      "Helvetica-Bold", SZ, LD),
-        (platform_id,                "Helvetica",      SZ, LD),
-        (time_str,                   "Helvetica",      SZ, LD),
-        (lat_str,                    "Helvetica",      SZ, LD),
-        (lon_str,                    "Helvetica",      SZ, LD),
-        (f"Depth: {depth_m:.1f} m", "Helvetica-Bold", SZ, LD),
+        ("IMR Salinity Sample",       "Helvetica-Bold", SZ, LD),
+        (platform_id,                 "Helvetica",      SZ, LD),
+        (time_str,                    "Helvetica",      SZ, LD),
+        (lat_str,                     "Helvetica",      SZ, LD),
+        (lon_str,                     "Helvetica",      SZ, LD),
+        (f"Depth: {depth_m:.1f} m",  "Helvetica-Bold", SZ, LD),
     ]
     if cruise_id:
-        lines.append((f"Cruise: {cruise_id}",    "Helvetica",      SZ, LD))
+        lines.append((f"Cruise: {cruise_id}",     "Helvetica",      SZ, LD))
     if cast_number:
-        lines.append((f"Station: {cast_number}", "Helvetica",      SZ, LD))
+        lines.append((f"Station: {cast_number}",  "Helvetica",      SZ, LD))
     if bottle_number:
         lines.append((f"Bottle: {bottle_number}", "Helvetica-Bold", SZ, LD))
-    # Full UUID split across two lines
-    lines.append((sample_id[:18], "Helvetica", SZ, LD))
-    lines.append((sample_id[18:], "Helvetica", SZ, LD))
 
     c = rl_canvas.Canvas(buf, pagesize=(w, h))
 
-    # Draw text top-down in left column
-    y = h - margin
+    # Text column — left half, small left margin
+    y = h - margin_top
     for text, font, size, leading in lines:
         y -= leading
         c.setFont(font, size)
         c.setFillColorRGB(0, 0, 0)
-        c.drawString(margin, y, text)
+        c.drawString(margin_left, y, text)
 
-    # Draw QR code on the right
+    # QR code — right column, above UUID
     qr_bytes = generate_qr_code(label_url, size_px=200)
-    c.drawImage(ImageReader(io.BytesIO(qr_bytes)), qr_x, qr_y,
+    c.drawImage(ImageReader(io.BytesIO(qr_bytes)), right_col_x, qr_y,
                 width=qr_size, height=qr_size)
+
+    # UUID — two lines below QR code, centred in right column
+    c.setFont("Helvetica", UUID_SZ)
+    c.setFillColorRGB(0.4, 0.4, 0.4)
+    for i, uid_line in enumerate(uuid_lines):
+        line_y = margin_bottom + (len(uuid_lines) - 1 - i) * UUID_LD
+        c.drawCentredString(right_col_x + right_col_w / 2, line_y, uid_line)
 
     c.save()
 
