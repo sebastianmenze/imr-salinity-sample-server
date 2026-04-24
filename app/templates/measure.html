@@ -212,6 +212,9 @@
         <input type="text" inputmode="decimal" name="psal_lab" placeholder="00.0000"
                style="font-size:1.3rem; font-weight:bold; padding: 14px;"
                required autofocus>
+        <span class="psal-warning" style="display:none; color:#c53030; font-size:0.82rem; margin-top:4px; display:none">
+            ⚠️ Please enter a valid number (e.g. 34.5796)
+        </span>
 
         <label>Measured by</label>
         <input type="text" name="measured_by" placeholder="Your name (optional)">
@@ -260,6 +263,9 @@
         <input type="text" inputmode="decimal" name="psal_lab" placeholder="00.0000"
                style="font-size:1.3rem; font-weight:bold; padding: 14px;"
                required autofocus>
+        <span class="psal-warning" style="display:none; color:#c53030; font-size:0.82rem; margin-top:4px; display:none">
+            ⚠️ Please enter a valid number (e.g. 34.5796)
+        </span>
 
         <label>Measured by</label>
         <input type="text" name="measured_by" placeholder="Your name (optional)">
@@ -301,16 +307,29 @@ function showPastePanel() {
     document.getElementById('paste-panel').style.display = 'block';
 }
 
-// Comma-to-dot normalisation for PSAL_LAB inputs
+// Comma-to-dot normalisation and float validation for PSAL_LAB inputs
 document.querySelectorAll('input[name="psal_lab"]').forEach(function(input) {
+    const warning = input.nextElementSibling;
+
+    function validate() {
+        const v = input.value.trim();
+        const invalid = v !== '' && isNaN(parseFloat(v));
+        warning.style.display = invalid ? 'block' : 'none';
+        input.style.borderColor = invalid ? '#c53030' : '';
+        return !invalid;
+    }
+
     input.addEventListener('input', function() {
         const pos = this.selectionStart;
         const hadComma = this.value.includes(',');
         this.value = this.value.replace(',', '.');
         if (hadComma) this.setSelectionRange(pos, pos);
+        validate();
     });
-    input.closest('form').addEventListener('submit', function() {
+
+    input.closest('form').addEventListener('submit', function(e) {
         input.value = input.value.replace(',', '.');
+        if (!validate() || input.value.trim() === '') e.preventDefault();
     });
 });
 
