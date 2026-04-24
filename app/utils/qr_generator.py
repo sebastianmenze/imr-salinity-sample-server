@@ -3,7 +3,7 @@ QR code and label PDF generator.
 
 Generates a printable label (PDF) for each salinity sample containing
 human-readable metadata and a QR code linking to the lab measurement URL.
-Label size: 50mm × 50mm square (Phomemo M110 format).
+Label size: 50mm × 30mm (Phomemo M110 format).
 """
 
 import qrcode
@@ -20,7 +20,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 LABEL_WIDTH_MM  = 50
-LABEL_HEIGHT_MM = 50
+LABEL_HEIGHT_MM = 30
 
 
 def generate_qr_code(url: str, size_px: int = 200) -> bytes:
@@ -56,7 +56,7 @@ def generate_label_pdf(
     output_path: Optional[str] = None,
 ) -> bytes:
     """
-    Generate a single 50mm × 50mm square label PDF.
+    Generate a single 50mm × 30mm label PDF.
     Text stacked at the top, large centred QR code at the bottom.
     Returns the PDF as bytes. Optionally saves to output_path.
     """

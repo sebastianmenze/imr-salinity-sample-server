@@ -56,7 +56,7 @@ Use this for samples taken without a CTD cast (e.g. bucket samples, underway sam
 
 After registration the system shows a **View Label** link and a **Download Label PDF** button.
 
-- The PDF is sized for the **Phomemo M110** label printer (50 × 50 mm).
+- The PDF is sized for the **Phomemo M110** label printer (50 × 30 mm).
 - Each label shows: vessel, time, position, depth, bottle number (bold), and a QR code.
 - Print immediately and attach the label to the sample bottle before it leaves the CTD deck.
 
@@ -175,7 +175,7 @@ The M110 connects via a USB cable (CSBC port on the printer). Windows will insta
 4. Windows should detect the printer and complete driver installation automatically.  
    If prompted, select **"Install driver automatically"**.
 
-### 2 — Configure the Label Size (50 × 50 mm)
+### 2 — Configure the Label Size (50 × 30 mm)
 
 The driver defaults to a roll size that does not match our labels. You must set the correct size once.
 
@@ -198,7 +198,7 @@ The driver defaults to a roll size that does not match our labels. You must set 
 5. Under **Page sizing**, choose **Actual size** (do **not** select "fit to page" — this will shrink the label).
 6. Click **Print**.
 
-> **Tip:** If the printed label is too small or too large, re-check that the paper size in printer preferences is exactly 50 × 50 mm and that "Actual size" is selected in the print dialog.
+> **Tip:** If the printed label is too small or too large, re-check that the paper size in printer preferences is exactly 50 × 30 mm and that "Actual size" is selected in the print dialog.
 
 ### 4 — Loading Labels
 
