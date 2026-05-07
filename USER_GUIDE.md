@@ -147,7 +147,7 @@ Click **⬇️ Download CSV** on the samples list page to download all sample da
 Write the Sample ID (example: `073935ef-3d0f-4a96-a69d-30d92eb20896`) on a post it note or other paper and tape it to the sample.
 
 ### I cannt connect to the salinity tracker website
-Check that you are inside the IMR network and correct WiFi. If the website seem to be down send a mail to sebastian.menze@imr.no and label the sampel with a post it note or other paper, including this data: `Ship name, UTC time, Latitude, Longitude, Station Number, Depth, Bottle number`.
+Check that you are inside the IMR network and correct WiFi. If the website seem to be down send a mail to sebastian.menze@imr.no and label the sampel with a post it note or other paper, including this data: `Ship name, UTC time, Latitude, Longitude, Station Number, Depth, CTD rosette bottle number`.
 
 ### "PhysChem token not set"
 Paste a fresh token from https://physchem-token-test.hi.no. Tokens expire after 1 hour.
