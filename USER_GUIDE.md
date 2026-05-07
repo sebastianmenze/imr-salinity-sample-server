@@ -7,27 +7,28 @@ This system manages the full lifecycle of water bottle salinity samples, from co
 ## Overview
 
 ```
-Ship / CTD deck                Lab
-─────────────────              ──────────────────────────────
-1. Register sample      →      2. Scan QR label
-   (BTL file or manual)        3. Enter salinity (PSAL_LAB)
-   Print label                 4. Upload to PhysChem
+Ship / CTD deck                   Lab
+─────────────────                 ──────────────────────────────
+1. Register sample           →    1. Scan QR label
+   (BTL file or manual)           2. Measure & Enter salinity (PSAL_LAB)
+2. Print label                    3. Upload to PhysChem
+3. Take sample & attach label   
 ```
 
-Every sample gets a **printed label** with a QR code. Scanning the QR code in the lab opens the measurement page directly — no login, no searching.
+Every sample gets a **printed label** with a QR code. Scanning the QR code in the lab opens the measurement page directly — no tables, no searching.
 
 ---
 
 ## Part 1 — On the Ship: Registering Samples
 
-Open the tracker in a browser. The address will be something like `http://nautilus.imr.no:8000` — ask your system administrator for the exact address.
+Open the salinity tracker website in a browser. The address will be  `http://nautilus.imr.no:8000` for now and can only be reached inside the IMR network. 
 
 ### Option A — Upload a Seabird BTL File (recommended)
 
 This is the fastest method. The BTL file is produced automatically by the Seabird SBE software after each CTD cast.
 
 1. On the **home page**, click **📁 BTL File** (this tab is active by default).
-2. Drag and drop the `.btl` file onto the drop zone, or click to browse. **One file at a time.**
+2. Drag and drop the `.btl` file onto the drop zone, or click to browse. **One file (CTD cast) at a time.**
 3. A preview table appears showing all bottles in the cast. Check that:
    - The cruise ID, station, platform name, and position look correct.
    - UTC time is filled in for each bottle. If it is missing, type it in before continuing.
@@ -40,7 +41,7 @@ This is the fastest method. The BTL file is produced automatically by the Seabir
 
 ### Option B — Manual Entry
 
-Use this for samples taken without a CTD cast (e.g. bucket samples, underway samples).
+Use this for samples taken without a Seabird CTD (e.g. bucket samples, underway samples).
 
 1. Click the **✏️ Manual Entry** tab.
 2. Fill in:
@@ -57,8 +58,9 @@ Use this for samples taken without a CTD cast (e.g. bucket samples, underway sam
 After registration the system shows a **View Label** link and a **Download Label PDF** button.
 
 - The PDF is sized for the **Phomemo M110** label printer (50 × 30 mm).
-- Each label shows: vessel, time, position, depth, bottle number (bold), and a QR code.
-- Print immediately and attach the label to the sample bottle before it leaves the CTD deck.
+- Each label shows: vessel, time, position, depth, bottle number, and a QR code.
+- Dry the sample bottle once it is filled with a towel or wipe
+- Than immediately attach the label to the **dry** sample bottle before it leaves the CTD deck.
 
 See **Appendix — Setting Up the Phomemo M110 on Windows** at the bottom of this guide for first-time printer setup.
 
@@ -84,7 +86,7 @@ The token is valid for **1 hour**. A live countdown is shown on every measuremen
 
 ### Step 2 — Open the Measurement Page
 
-Scan the QR code on the sample label with any phone or tablet. This opens the measurement page for that specific sample.
+Be connected to the IMR network (WiFi). Scan the QR code on the sample label with the Barcode scanner connected to your PC, or any tablet, phone or PC. This opens the measurement page for that specific sample.
 
 The page shows the sample metadata (time, position, depth, vessel) and the CTD sensor salinities for reference.
 
@@ -93,8 +95,8 @@ If a PhysChem token is active and the sample has a matching cruise in PhysChem, 
 ### Step 3 — Enter the Measurement
 
 1. Type the measured salinity in the **PSAL_LAB** field.  
-   Use the format `34.5796` (four decimal places recommended).
-2. Optionally fill in **Measured by** (your name) and **Notes** (instrument used, any observations).
+   Use this format with dot as separator `34.5796`.
+2. Optionally fill in **Notes** (any observations).
 3. Click **📤 Upload Measurement**.
 
 The system will:
@@ -139,8 +141,18 @@ Click **⬇️ Download CSV** on the samples list page to download all sample da
 
 ## Troubleshooting
 
+### At sea:
+
+### The label printer is broken or out of paper 
+Write the Sample ID (example: `073935ef-3d0f-4a96-a69d-30d92eb20896`) on a post it note or other paper and tape it to the sample.
+
+### I cannt connect to the salinity tracker website
+Check that you are inside the IMR network and correct WiFi. If the website seem to be down send a mail to sebastian.menze@imr.no and label the sampel with a post it note or other paper, including this data: `Ship name, UTC time, Latitude, Longitude, Station Number, Depth, CTD rosette bottle number`.
+
 ### "PhysChem token not set"
 Paste a fresh token from https://physchem-token-test.hi.no. Tokens expire after 1 hour.
+
+### In Lab:
 
 ### "No PhysChem mission found matching time/position"
 - Check that the **Cruise ID** was entered during registration. Without it the system searches by time and position, which can fail if the cruise is not yet in PhysChem.
@@ -177,14 +189,14 @@ The M110 connects via a USB cable (CSBC port on the printer). Windows will insta
 
 ### 2 — Configure the Label Size (50 × 30 mm)
 
-The driver defaults to a roll size that does not match our labels. You must set the correct size once.
+The driver can default to a roll size that does not match our labels. You must set the correct size once.
 
 1. Open **Settings → Bluetooth & devices → Printers & scanners**.
 2. Click the **Phomemo M110** (or similar name) → **Printer preferences**.
 3. In the preferences window, find the **Paper / Media** tab.
-4. Set the paper size to **50 mm × 50 mm** (you may need to create a custom size):
+4. Set the paper size to **50 mm × 30 mm** (you may need to create a custom size):
    - Click **New** or **Custom paper size**.
-   - Width: **50 mm**, Height: **50 mm**.
+   - Width: **50 mm**, Height: **30 mm**.
    - Save and apply.
 5. Set **Orientation** to **Portrait**.
 6. Click **OK** to save.
@@ -195,16 +207,15 @@ The driver defaults to a roll size that does not match our labels. You must set 
 2. Open the PDF in any PDF viewer (Adobe Acrobat, Microsoft Edge, Chrome, etc.).
 3. Press **Ctrl + P** to print.
 4. Select the **Phomemo M110** as the printer.
-5. Under **Page sizing**, choose **Actual size** (do **not** select "fit to page" — this will shrink the label).
+5. Under **Page sizing**, choose fit to page.
 6. Click **Print**.
 
-> **Tip:** If the printed label is too small or too large, re-check that the paper size in printer preferences is exactly 50 × 30 mm and that "Actual size" is selected in the print dialog.
+> **Tip:** If the printed label is too small or too large, re-check that the paper size in printer preferences is exactly 50 × 50 mm and that "Actual size" is selected in the print dialog.
 
 ### 4 — Loading Labels
 
-- Use 50 mm wide continuous label roll.
 - Open the printer cover, slide the roll in with the printable side facing down, and thread the paper through the slot until it comes out the front.
-- Close the cover and press the feed button once to align the paper.
+- Close the cover and print a random label to align the paper.
 
 ---
 
