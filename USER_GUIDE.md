@@ -7,27 +7,28 @@ This system manages the full lifecycle of water bottle salinity samples, from co
 ## Overview
 
 ```
-Ship / CTD deck                Lab
-─────────────────              ──────────────────────────────
-1. Register sample      →      2. Scan QR label
-   (BTL file or manual)        3. Enter salinity (PSAL_LAB)
-   Print label                 4. Upload to PhysChem
+Ship / CTD deck                   Lab
+─────────────────                 ──────────────────────────────
+1. Register sample           →    1. Scan QR label
+   (BTL file or manual)           2. Measure & Enter salinity (PSAL_LAB)
+2. Print label                    3. Upload to PhysChem
+3. Take sample & attach label   
 ```
 
-Every sample gets a **printed label** with a QR code. Scanning the QR code in the lab opens the measurement page directly — no login, no searching.
+Every sample gets a **printed label** with a QR code. Scanning the QR code in the lab opens the measurement page directly — no tables, no searching.
 
 ---
 
 ## Part 1 — On the Ship: Registering Samples
 
-Open the tracker in a browser. The address will be something like `http://nautilus.imr.no:8000` — ask your system administrator for the exact address.
+Open the salinity tracker website in a browser. The address will be  `http://nautilus.imr.no:8000` for now and can only be reached inside the IMR network. 
 
 ### Option A — Upload a Seabird BTL File (recommended)
 
 This is the fastest method. The BTL file is produced automatically by the Seabird SBE software after each CTD cast.
 
 1. On the **home page**, click **📁 BTL File** (this tab is active by default).
-2. Drag and drop the `.btl` file onto the drop zone, or click to browse. **One file at a time.**
+2. Drag and drop the `.btl` file onto the drop zone, or click to browse. **One file (CTD cast) at a time.**
 3. A preview table appears showing all bottles in the cast. Check that:
    - The cruise ID, station, platform name, and position look correct.
    - UTC time is filled in for each bottle. If it is missing, type it in before continuing.
@@ -40,7 +41,7 @@ This is the fastest method. The BTL file is produced automatically by the Seabir
 
 ### Option B — Manual Entry
 
-Use this for samples taken without a CTD cast (e.g. bucket samples, underway samples).
+Use this for samples taken without a Seabird CTD (e.g. bucket samples, underway samples).
 
 1. Click the **✏️ Manual Entry** tab.
 2. Fill in:
@@ -56,9 +57,10 @@ Use this for samples taken without a CTD cast (e.g. bucket samples, underway sam
 
 After registration the system shows a **View Label** link and a **Download Label PDF** button.
 
-- The PDF is sized for the **Phomemo M110** label printer (50 × 50 mm).
+- The PDF is sized for the **Phomemo M110** label printer (50 × 30 mm).
 - Each label shows: vessel, time, position, depth, bottle number (bold), and a QR code.
-- Print immediately and attach the label to the sample bottle before it leaves the CTD deck.
+- Dry the sample bottle outside once it is filled with a towel or wipe
+- Than immediately attach the label to the **dry** sample bottle before it leaves the CTD deck.
 
 See **Appendix — Setting Up the Phomemo M110 on Windows** at the bottom of this guide for first-time printer setup.
 
