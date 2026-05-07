@@ -149,10 +149,10 @@ Write the Sample ID (example: `073935ef-3d0f-4a96-a69d-30d92eb20896`) on a post 
 ### I cannt connect to the salinity tracker website
 Check that you are inside the IMR network and correct WiFi. If the website seem to be down send a mail to sebastian.menze@imr.no and label the sampel with a post it note or other paper, including this data: `Ship name, UTC time, Latitude, Longitude, Station Number, Depth, CTD rosette bottle number`.
 
+### In Lab:
+
 ### "PhysChem token not set"
 Paste a fresh token from https://physchem-token-test.hi.no. Tokens expire after 1 hour.
-
-### In Lab:
 
 ### "No PhysChem mission found matching time/position"
 - Check that the **Cruise ID** was entered during registration. Without it the system searches by time and position, which can fail if the cruise is not yet in PhysChem.
