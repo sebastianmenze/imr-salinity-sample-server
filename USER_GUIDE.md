@@ -210,8 +210,6 @@ The driver can default to a roll size that does not match our labels. You must s
 5. Under **Page sizing**, choose fit to page.
 6. Click **Print**.
 
-> **Tip:** If the printed label is too small or too large, re-check that the paper size in printer preferences is exactly 50 × 50 mm and that "Actual size" is selected in the print dialog.
-
 ### 4 — Loading Labels
 
 - Open the printer cover, slide the roll in with the printable side facing down, and thread the paper through the slot until it comes out the front.
