@@ -77,7 +77,7 @@ def generate_label_pdf(
 
     # Build metadata lines — 7pt throughout, no UUID here
     SZ, LD = 7.0, 8.5
-    UUID_SZ, UUID_LD = SZ, LD
+    UUID_SZ, UUID_LD = 8.0, 9.5
 
     uuid_lines  = [sample_id]
     uuid_height = UUID_LD
