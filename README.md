@@ -13,7 +13,7 @@ Ship / CTD deck                          Lab
 Register sample                    →     Scan QR label
   • Upload Seabird BTL file              Enter PSAL_LAB measurement
   • or manual entry                      Auto-upload to PhysChem
-Print 50×50 mm QR label                  Add replicate measurements (new ordinal)
+Print 50×30 mm QR label                  Add replicate measurements (new ordinal)
 Attach to bottle
 ```
 
@@ -63,7 +63,7 @@ Multiple measurements per sample are supported (replicates get consecutive PhysC
 
 ## Label Printing
 
-Labels are **50 × 50 mm** PDF (Phomemo M110 format). Download from `/label/{id}/pdf`.
+Labels are **50 × 30 mm** PDF (Phomemo M110 format). Download from `/label/{id}/pdf`.
 Left half: metadata text (vessel, time, position, depth in bold, bottle in bold). Right half: QR code linking to the measurement page.
 
 See the [printer setup appendix](USER_GUIDE.md#appendix--setting-up-the-phomemo-m110-on-windows-usbcsbc) in the user guide for Windows driver and label size configuration.
@@ -83,7 +83,7 @@ app/
     auth.py            # Token paste / logout endpoints
   utils/
     bot_parser.py      # Seabird BTL file parser
-    qr_generator.py    # QR code + 50×50 mm label PDF generator
+    qr_generator.py    # QR code + 50×30 mm label PDF generator
     physchem.py        # PhysChem API client (mission/operation/BOT lookup)
     azure_auth.py      # Azure AD token cache
   templates/           # Jinja2 HTML templates
