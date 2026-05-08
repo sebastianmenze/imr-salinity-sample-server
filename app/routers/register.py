@@ -9,11 +9,10 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional, List
-import uuid
 import json
 
 from app.database import get_db
-from app.models.sample import SalinitySample, SampleStatus
+from app.models.sample import SalinitySample, SampleStatus, _new_short_id
 from app.utils.bot_parser import parse_bot_file
 from app.utils.qr_generator import generate_label_pdf
 from app.config import settings
@@ -21,6 +20,14 @@ from app.data.platforms import PLATFORMS
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+
+
+def _unique_id(db: Session) -> str:
+    for _ in range(10):
+        sid = _new_short_id()
+        if not db.query(SalinitySample).filter(SalinitySample.id == sid).first():
+            return sid
+    raise RuntimeError("Failed to generate a unique sample ID")
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -53,7 +60,7 @@ async def register_manual(
     psal_1_val = float(psal_1) if psal_1 else None
     psal_2_val = float(psal_2) if psal_2 else None
     sample = SalinitySample(
-        id=uuid.uuid4(),
+        id=_unique_id(db),
         utc_time=utc_dt,
         latitude=latitude,
         longitude=longitude,
@@ -147,7 +154,7 @@ async def register_bot_confirm(
         utc_time = datetime.fromisoformat(bottle["utc_time"])
 
         sample = SalinitySample(
-            id=uuid.uuid4(),
+            id=_unique_id(db),
             utc_time=utc_time,
             latitude=bottle.get("latitude"),
             longitude=bottle.get("longitude"),
@@ -178,7 +185,7 @@ async def register_bot_confirm(
 
 
 @router.get("/label/{sample_id}", response_class=HTMLResponse)
-async def view_label(request: Request, sample_id: uuid.UUID, db: Session = Depends(get_db)):
+async def view_label(request: Request, sample_id: str, db: Session = Depends(get_db)):
     sample = db.query(SalinitySample).filter(SalinitySample.id == sample_id).first()
     if not sample:
         raise HTTPException(status_code=404, detail="Sample not found")
@@ -192,7 +199,7 @@ async def view_label(request: Request, sample_id: uuid.UUID, db: Session = Depen
 
 
 @router.get("/label/{sample_id}/pdf")
-async def download_label_pdf(request: Request, sample_id: uuid.UUID, db: Session = Depends(get_db)):
+async def download_label_pdf(request: Request, sample_id: str, db: Session = Depends(get_db)):
     from fastapi.responses import Response
     sample = db.query(SalinitySample).filter(SalinitySample.id == sample_id).first()
     if not sample:
@@ -202,7 +209,7 @@ async def download_label_pdf(request: Request, sample_id: uuid.UUID, db: Session
     label_url = f"{base}/measure/{sample.id}"
 
     pdf_bytes = generate_label_pdf(
-        sample_id=str(sample.id),
+        sample_id=sample.id,
         utc_time=sample.utc_time,
         latitude=sample.latitude,
         longitude=sample.longitude,
@@ -218,5 +225,5 @@ async def download_label_pdf(request: Request, sample_id: uuid.UUID, db: Session
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="label_{str(sample.id)[:8]}.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="label_{sample.id}.pdf"'},
     )

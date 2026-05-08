@@ -79,8 +79,8 @@ def generate_label_pdf(
     SZ, LD = 7.0, 8.5
     UUID_SZ, UUID_LD = SZ, LD
 
-    uuid_lines  = [sample_id[:18], sample_id[18:]]
-    uuid_height = len(uuid_lines) * UUID_LD
+    uuid_lines  = [sample_id]
+    uuid_height = UUID_LD
 
     # QR sits above the UUID block
     qr_size = min(right_col_w, h - margin_top - margin_bottom - uuid_height - 1.5 * rl_mm)

@@ -9,7 +9,6 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
-import uuid
 import csv
 import io
 
@@ -69,7 +68,7 @@ def _sync_physchem_measurements(db: Session, sample: SalinitySample, physchem_da
 
 
 @router.get("/measure/{sample_id}", response_class=HTMLResponse)
-async def measure_sample(request: Request, sample_id: uuid.UUID, db: Session = Depends(get_db)):
+async def measure_sample(request: Request, sample_id: str, db: Session = Depends(get_db)):
     """QR code lands here — shows sample metadata and measurement form."""
     sample = db.query(SalinitySample).filter(SalinitySample.id == sample_id).first()
     if not sample:
@@ -105,7 +104,7 @@ async def measure_sample(request: Request, sample_id: uuid.UUID, db: Session = D
 @router.post("/measure/{sample_id}", response_class=HTMLResponse)
 async def submit_measurement(
     request: Request,
-    sample_id: uuid.UUID,
+    sample_id: str,
     psal_lab: float = Form(...),
     measured_by: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
@@ -138,7 +137,7 @@ async def submit_measurement(
     upload_result = {"success": False, "message": "PhysChem not configured"}
     if physchem_client.is_configured():
         upload_result = await physchem_client.upload_measurement(
-            sample_id=str(sample.id),
+            sample_id=sample.id,
             utc_time=sample.utc_time,
             latitude=sample.latitude,
             longitude=sample.longitude,
@@ -205,7 +204,7 @@ async def submit_measurement(
 @router.post("/measure/{sample_id}/upload", response_class=HTMLResponse)
 async def retry_physchem_upload(
     request: Request,
-    sample_id: uuid.UUID,
+    sample_id: str,
     db: Session = Depends(get_db),
 ):
     """Retry PhysChem upload for an already-measured sample."""
@@ -326,7 +325,7 @@ async def export_samples_csv(db: Session = Depends(get_db)):
     writer.writerow(fields)
     for s in samples:
         meta = [
-            str(s.id),
+            s.id,
             s.utc_time.strftime("%Y-%m-%dT%H:%M:%SZ") if s.utc_time else "",
             s.latitude, s.longitude, s.depth_m,
             s.platform_id, s.cruise_id or "", s.station_id or "",

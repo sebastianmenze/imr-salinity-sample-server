@@ -1,5 +1,4 @@
 from sqlalchemy import Column, String, Float, DateTime, Text, Integer, ForeignKey, Enum as SAEnum
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -14,11 +13,15 @@ class SampleStatus(str, enum.Enum):
     uploaded = "uploaded"       # Pushed to PhysChem
 
 
+def _new_short_id() -> str:
+    return uuid.uuid4().hex[:8]
+
+
 class SampleMeasurement(Base):
     __tablename__ = "sample_measurements"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    sample_id = Column(UUID(as_uuid=True), ForeignKey("salinity_samples.id"), nullable=False)
+    sample_id = Column(String(8), ForeignKey("salinity_samples.id"), nullable=False)
     psal_lab = Column(Float, nullable=False)
     measured_by = Column(String(100), nullable=True)
     measured_at = Column(DateTime(timezone=True), nullable=True)
@@ -33,8 +36,8 @@ class SampleMeasurement(Base):
 class SalinitySample(Base):
     __tablename__ = "salinity_samples"
 
-    # Primary key — becomes the QR code URL path
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Primary key — 8-char hex (uuid4), becomes the QR code URL path
+    id = Column(String(8), primary_key=True)
 
     # Oceanographic metadata (from BOT file or manual entry)
     utc_time = Column(DateTime(timezone=True), nullable=False)
