@@ -71,6 +71,7 @@ See **Appendix — Setting Up the Phomemo M110 on Windows** at the bottom of thi
 
 ![Bottle and label](images/bottle.png)
 *Label attached to salinity sample bottle*
+
 ---
 
 ## Part 2 — In the Lab: Entering Measurements
