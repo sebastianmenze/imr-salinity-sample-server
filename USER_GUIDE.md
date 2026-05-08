@@ -56,17 +56,21 @@ Use this for samples taken without a Seabird CTD (e.g. bucket samples, underway 
 ### Printing Labels
 
 After registration the system shows a **View Label** link and a **Download Label PDF** button.
-
-- The PDF is sized for the **Phomemo M110** label printer (50 × 30 mm).
-- Each label shows: vessel, time, position, depth, bottle number, and a QR code.
-- Dry the sample bottle once it is filled with a towel or wipe
-- Than immediately attach the label to the **dry** sample bottle before it leaves the CTD deck.
-
+- For each bottle download and open PDF Label and print it with **Phomemo M110** label printer (50 × 30 mm, fit to paper).
+  
 See **Appendix — Setting Up the Phomemo M110 on Windows** at the bottom of this guide for first-time printer setup.
 
 ![Phomemo M110 label printer](images/printer.png)
 *Phomemo M110 connected via USB/CSBC.*
 
+### Attaching Labels
+- Fill sample bottle 
+- Dry the sample bottle with a towel or wipe
+- Than immediately attach the label to the **dry** sample bottle as shown
+- Done!
+
+![Bottle and label](images/bottle.png)
+*Label attached to salinity sample bottle*
 ---
 
 ## Part 2 — In the Lab: Entering Measurements
