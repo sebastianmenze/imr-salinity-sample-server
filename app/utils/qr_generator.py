@@ -68,7 +68,7 @@ def generate_label_pdf(
     margin_left   = 0.8 * rl_mm
     margin_right  = 1.0 * rl_mm
     margin_top    = 1.0 * rl_mm
-    margin_bottom = 1.0 * rl_mm
+    margin_bottom = 2.5 * rl_mm
     gap           = 1.5 * rl_mm   # gap between text and QR columns
 
     # Right column geometry (QR + UUID underneath)
@@ -83,8 +83,8 @@ def generate_label_pdf(
     uuid_height = UUID_LD
 
     # QR sits above the UUID block
-    qr_size = min(right_col_w, h - margin_top - margin_bottom - uuid_height - 1.5 * rl_mm)
-    qr_y    = margin_bottom + uuid_height + 1.0 * rl_mm
+    qr_size = min(right_col_w, h - margin_top - margin_bottom - uuid_height - 0.5 * rl_mm)
+    qr_y    = margin_bottom + uuid_height + 0.3 * rl_mm
     time_str = utc_time.strftime("%Y-%m-%d %H:%M UTC")
     lat_str  = f"{latitude:.4f}°N"  if latitude  >= 0 else f"{abs(latitude):.4f}°S"
     lon_str  = f"{longitude:.4f}°E" if longitude >= 0 else f"{abs(longitude):.4f}°W"
