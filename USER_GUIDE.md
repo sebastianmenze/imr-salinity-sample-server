@@ -56,6 +56,7 @@ Use this for samples taken without a Seabird CTD (e.g. bucket samples, underway 
 ### Printing Labels
 
 After registration the system shows a **View Label** link and a **Download Label PDF** button.
+
 - For each bottle download and open PDF Label and print it with **Phomemo M110** label printer (50 × 30 mm, fit to paper).
   
 See **Appendix — Setting Up the Phomemo M110 on Windows** at the bottom of this guide for first-time printer setup.
