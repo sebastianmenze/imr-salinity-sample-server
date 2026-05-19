@@ -102,6 +102,7 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-colo
                         <th>UTC Time *</th>
                         <th>Latitude *</th>
                         <th>Longitude *</th>
+                        <th>Comment</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -127,6 +128,10 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-colo
                     </td>
                     <td>{{ '%.4f'|format(b.latitude) if b.latitude is not none else '—' }}</td>
                     <td>{{ '%.4f'|format(b.longitude) if b.longitude is not none else '—' }}</td>
+                    <td>
+                        <input class="edit-input" type="text" data-field="comment"
+                               placeholder="optional" style="width:120px" value="{{ b.comment or '' }}">
+                    </td>
                 </tr>
                 {% endfor %}
                 </tbody>
@@ -149,10 +154,14 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-colo
 
 <script>
 (function () {
+    const form     = document.getElementById('confirm-form');
     const allCb    = document.getElementById('select-all');
     const badge    = document.getElementById('sel-count');
     const regBtn   = document.getElementById('reg-btn');
     const regCount = document.getElementById('reg-count');
+    const jsonInput = document.getElementById('bottles_json_input');
+
+    let bottles = JSON.parse(jsonInput.value);
 
     function getCbs() { return document.querySelectorAll('.bottle-cb:not([disabled])'); }
 
@@ -174,6 +183,18 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-colo
     document.querySelectorAll('.bottle-cb').forEach(cb =>
         cb.addEventListener('change', updateCount)
     );
+
+    // Before submit: write comment values back into bottles_json
+    form.addEventListener('submit', () => {
+        document.querySelectorAll('.bottle-row').forEach(row => {
+            const idx = parseInt(row.dataset.idx);
+            const b = bottles.find(b => b.idx === idx);
+            if (!b) return;
+            const inp = row.querySelector('input[data-field="comment"]');
+            b.comment = inp ? inp.value.trim() : '';
+        });
+        jsonInput.value = JSON.stringify(bottles);
+    });
 
     updateCount();
 })();

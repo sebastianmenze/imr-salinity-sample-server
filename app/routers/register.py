@@ -166,6 +166,7 @@ async def register_bot_confirm(
             bottle_number=bottle.get("bottle_number"),
             psal_1=bottle.get("psal_1"),
             psal_2=bottle.get("psal_2"),
+            notes=bottle.get("comment") or None,
             status=SampleStatus.registered,
             source="bot_file",
         )
