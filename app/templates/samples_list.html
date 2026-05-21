@@ -24,7 +24,7 @@
                     <th style="padding:6px 8px">Depth</th>
                     <th style="padding:6px 8px">Ord.</th>
                     <th style="padding:6px 8px">PSAL_LAB</th>
-                    <th style="padding:6px 8px">Measured by</th>
+                    <th style="padding:6px 8px">Lab Comment</th>
                     <th style="padding:6px 8px">Comment</th>
                     <th style="padding:6px 8px">Status</th>
                 </tr>
@@ -46,7 +46,7 @@
                         {% endif %}
                         <td style="padding:6px 8px; color:#718096">{{ m.physchem_ordinal or '—' }}</td>
                         <td style="padding:6px 8px; font-weight:600">{{ "%.4f"|format(m.psal_lab) }}</td>
-                        <td style="padding:6px 8px; color:#4a5568">{{ m.measured_by or '—' }}</td>
+                        <td style="padding:6px 8px; color:#4a5568">{{ m.notes or '—' }}</td>
                         {% if loop.first %}
                         <td style="padding:6px 8px; color:#4a5568" rowspan="{{ s.measurements|length }}">{{ s.notes or '—' }}</td>
                         <td style="padding:6px 8px" rowspan="{{ s.measurements|length }}">
