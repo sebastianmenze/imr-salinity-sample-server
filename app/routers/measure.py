@@ -315,7 +315,7 @@ async def export_samples_csv(db: Session = Depends(get_db)):
     fields = [
         "id", "utc_time", "latitude", "longitude", "depth_m",
         "platform_id", "cruise_id", "station_id", "cast_number", "bottle_number",
-        "psal_1", "psal_2", "status", "source", "created_at",
+        "psal_1", "psal_2", "sample_comment", "status", "source", "created_at",
         "measurement_ordinal", "psal_lab", "measured_by", "measured_at",
         "measurement_notes", "physchem_reading_id", "physchem_operation_id",
     ]
@@ -332,6 +332,7 @@ async def export_samples_csv(db: Session = Depends(get_db)):
             s.cast_number or "", s.bottle_number or "",
             s.psal_1 if s.psal_1 is not None else "",
             s.psal_2 if s.psal_2 is not None else "",
+            s.notes or "",
             s.status.value,
             s.source or "",
             s.created_at.strftime("%Y-%m-%dT%H:%M:%SZ") if s.created_at else "",
