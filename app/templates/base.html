@@ -78,5 +78,51 @@
     <a href="/samples">📊 All Samples</a>
     <a href="/guide">📖 User Guide</a>
 </div>
+<script>
+/* QR barcode scanner intercept
+   USB scanners act as keyboards and type very fast (< 30ms between chars).
+   We buffer rapid keypresses and on Enter open any /measure/ URL in a new tab.
+   Normal human typing (~100ms+ between keys) is ignored. */
+(function () {
+    var buf = '', lastKey = 0;
+    var THRESHOLD = 50; // ms — scanners: ~1ms, humans: ~100ms+
+
+    document.addEventListener('keydown', function (e) {
+        var now = Date.now();
+        var delta = now - lastKey;
+        lastKey = now;
+
+        if (e.key === 'Enter') {
+            var text = buf.trim();
+            buf = '';
+            if (!text) return;
+
+            var url = null;
+            if (text.indexOf('/measure/') !== -1) {
+                // Full URL from QR code
+                url = text;
+            } else if (/^[0-9a-f]{8}$/i.test(text)) {
+                // Plain 8-char sample ID
+                url = window.location.origin + '/measure/' + text;
+            }
+
+            if (url) {
+                e.preventDefault();
+                window.open(url, '_blank');
+            }
+            return;
+        }
+
+        if (delta > THRESHOLD) {
+            // Gap too large — human typing, reset buffer
+            buf = '';
+        }
+
+        if (e.key.length === 1) {
+            buf += e.key;
+        }
+    });
+})();
+</script>
 </body>
 </html>
