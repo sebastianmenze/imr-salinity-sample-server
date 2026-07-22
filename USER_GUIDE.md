@@ -92,9 +92,9 @@ The token is valid for **1 hour**. A live countdown is shown on every measuremen
 
 ### Step 2 — Open the Measurement Page
 
-Be connected to the IMR network (WiFi). Scan the QR code on the sample label with the Barcode scanner connected to your PC, or any tablet, phone or PC. This opens the measurement page for that specific sample.
+Be connected to the IMR network (WiFi). In a browser open the website **http://nautilus.imr.no:8000** and have it as active tab. Connect the Barcode scanner to your PC and start scanning a bottle label QR code by pressing the trigger. This opens the measurement page for that specific sample. It is also possible to scan the label using any tablet, phone or PC with a camera.
 
-The page shows the sample metadata (time, position, depth, vessel) and the CTD sensor salinities for reference.
+The measurement page shows the sample metadata (time, position, depth, vessel) and the CTD sensor salinities for reference.
 
 If a PhysChem token is active and the sample has a matching cruise in PhysChem, **existing PhysChem values** (CTD PSAL and any previous PSAL_LAB readings) are shown automatically so you can compare.
 
@@ -121,6 +121,8 @@ The system will:
 If the same bottle is measured again (replicate, re-run), go back to the measurement page (scan the QR code again). A new **Add Additional Measurement** form is shown below the existing values. Submitting it creates a new PhysChem parameter with the next ordinal number (ordinal 2, 3, …) — the original value is never overwritten.
 
 All measurements are listed in the **📋 Lab Measurements** table on the page, showing PSAL_LAB value, who measured it, when, and the PhysChem ordinal.
+
+> To start a new sample, have any salinity samaple website server tab open and simply scan the qr code with the barcode scanner.
 
 ---
 
