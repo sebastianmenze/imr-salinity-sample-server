@@ -162,6 +162,7 @@
                 <th style="padding:6px 8px">Measured by</th>
                 <th style="padding:6px 8px">Date (UTC)</th>
                 <th style="padding:6px 8px">PhysChem</th>
+                <th style="padding:6px 8px"></th>
             </tr>
         </thead>
         <tbody>
@@ -178,6 +179,15 @@
                     <span style="color:#276749; font-size:0.8rem">✓ ordinal {{ m.physchem_ordinal }}</span>
                     {% else %}
                     <span style="color:#a0aec0; font-size:0.8rem">not uploaded</span>
+                    {% endif %}
+                </td>
+                <td style="padding:6px 8px">
+                    {% if m.physchem_reading_id and physchem_authenticated %}
+                    <form method="post" action="/measure/{{ sample.id }}/measurement/{{ m.id }}/delete"
+                          onsubmit="return confirm('Delete PSAL_LAB ordinal {{ m.physchem_ordinal }} from PhysChem? This cannot be undone.')">
+                        <button type="submit" style="background:none; border:none; color:#c53030;
+                                font-size:0.8rem; cursor:pointer; padding:0">🗑 Delete</button>
+                    </form>
                     {% endif %}
                 </td>
             </tr>

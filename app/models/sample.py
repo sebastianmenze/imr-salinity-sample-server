@@ -27,6 +27,7 @@ class SampleMeasurement(Base):
     measured_at = Column(DateTime(timezone=True), nullable=True)
     notes = Column(Text, nullable=True)
     physchem_reading_id = Column(String(50), nullable=True)
+    physchem_parameter_id = Column(String(50), nullable=True)
     physchem_ordinal = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

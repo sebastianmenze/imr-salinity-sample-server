@@ -157,6 +157,7 @@ async def submit_measurement(
             sample.physchem_upload_id = upload_result.get("upload_id", "")
             sample.physchem_operation_id = str(upload_result.get("operation_id", ""))
             meas.physchem_reading_id = str(upload_result.get("reading_id", ""))
+            meas.physchem_parameter_id = str(upload_result.get("parameter_id", ""))
             meas.physchem_ordinal = upload_result.get("physchem_ordinal")
             db.commit()
 
@@ -284,6 +285,66 @@ async def retry_physchem_upload(
         "upload_error": upload_result.get("message", "Unknown error"),
         "upload_error_url": upload_result.get("physchem_url"),
         "physchem_data": physchem_data,
+    })
+
+
+@router.post("/measure/{sample_id}/measurement/{measurement_id}/delete", response_class=HTMLResponse)
+async def delete_measurement(
+    request: Request,
+    sample_id: str,
+    measurement_id: int,
+    db: Session = Depends(get_db),
+):
+    """Delete a PSAL_LAB reading from PhysChem and remove it from local DB."""
+    sample = db.query(SalinitySample).filter(SalinitySample.id == sample_id).first()
+    if not sample:
+        raise HTTPException(status_code=404, detail="Sample not found")
+
+    meas = db.query(SampleMeasurement).filter(
+        SampleMeasurement.id == measurement_id,
+        SampleMeasurement.sample_id == sample_id,
+    ).first()
+    if not meas:
+        raise HTTPException(status_code=404, detail="Measurement not found")
+
+    delete_error = None
+    if meas.physchem_reading_id and meas.physchem_parameter_id:
+        result = await physchem_client.delete_reading(
+            parameter_id=int(meas.physchem_parameter_id),
+            reading_id=int(meas.physchem_reading_id),
+        )
+        if not result["success"]:
+            delete_error = result.get("message", "Unknown error")
+
+    if not delete_error:
+        db.delete(meas)
+        remaining = [m for m in sample.measurements if m.id != measurement_id]
+        if not remaining:
+            sample.status = SampleStatus.measured if sample.psal_lab else SampleStatus.in_lab
+            sample.physchem_upload_id = None
+        db.commit()
+
+    physchem_data = None
+    try:
+        physchem_data = await physchem_client.fetch_physchem_values(
+            cruise_id=sample.cruise_id,
+            utc_time=sample.utc_time,
+            latitude=sample.latitude,
+            longitude=sample.longitude,
+            depth_m=sample.depth_m,
+            bottle_number=sample.bottle_number,
+        )
+    except Exception:
+        pass
+
+    db.refresh(sample)
+    return templates.TemplateResponse("measure.html", {
+        "request": request,
+        "sample": sample,
+        "physchem_authenticated": azure_auth.is_authenticated(),
+        "physchem_token_status": azure_auth.get_token_status(),
+        "physchem_data": physchem_data,
+        "upload_error": delete_error,
     })
 
 
