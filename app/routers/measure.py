@@ -6,6 +6,7 @@ Handles QR scan landing page and salinity measurement submission.
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
@@ -367,6 +368,27 @@ async def list_samples(
         "request": request,
         "samples": samples,
         "SampleStatus": SampleStatus,
+    })
+
+
+@router.get("/measured-today", response_class=HTMLResponse)
+async def measured_today(request: Request, db: Session = Depends(get_db)):
+    """Show every lab measurement logged (measured or synced) since midnight UTC today."""
+    today = datetime.utcnow().date()
+    today_start = datetime(today.year, today.month, today.day)
+    logged_at = func.coalesce(SampleMeasurement.measured_at, SampleMeasurement.created_at)
+
+    rows = (
+        db.query(SampleMeasurement)
+        .join(SalinitySample)
+        .filter(logged_at >= today_start)
+        .order_by(logged_at.desc())
+        .all()
+    )
+
+    return templates.TemplateResponse("measured_today.html", {
+        "request": request,
+        "rows": rows,
     })
 
 
