@@ -322,25 +322,26 @@ async def delete_measurement(
         if not result["success"]:
             delete_error = result.get("message", "Unknown error")
 
-    if not delete_error:
-        db.delete(meas)
-        remaining = [m for m in sample.measurements if m.id != measurement_id]
-        if not remaining:
-            # No measurements left at all — reset to a clean slate so the
-            # entry form is shown again instead of stale cached values.
-            sample.status = SampleStatus.in_lab
-            sample.psal_lab = None
-            sample.measured_by = None
-            sample.measured_at = None
-            sample.physchem_upload_id = None
-        else:
-            last = remaining[-1]
-            sample.psal_lab = last.psal_lab
-            sample.measured_by = last.measured_by
-            sample.measured_at = last.measured_at
-            sample.status = SampleStatus.uploaded if last.physchem_reading_id else SampleStatus.measured
-            sample.physchem_upload_id = last.physchem_reading_id or None
-        db.commit()
+    # Always remove the local record and reset the sample so the entry form
+    # reappears, even if the PhysChem-side delete failed (e.g. the reading was
+    # already removed there, or the API call errored) — the delete_error is
+    # still surfaced to the user as a warning, but never blocks local cleanup.
+    db.delete(meas)
+    remaining = [m for m in sample.measurements if m.id != measurement_id]
+    if not remaining:
+        sample.status = SampleStatus.in_lab
+        sample.psal_lab = None
+        sample.measured_by = None
+        sample.measured_at = None
+        sample.physchem_upload_id = None
+    else:
+        last = remaining[-1]
+        sample.psal_lab = last.psal_lab
+        sample.measured_by = last.measured_by
+        sample.measured_at = last.measured_at
+        sample.status = SampleStatus.uploaded if last.physchem_reading_id else SampleStatus.measured
+        sample.physchem_upload_id = last.physchem_reading_id or None
+    db.commit()
 
     redirect_url = f"/measure/{sample_id}"
     if delete_error:
