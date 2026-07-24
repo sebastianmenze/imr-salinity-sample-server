@@ -4,11 +4,12 @@ Handles QR scan landing page and salinity measurement submission.
 """
 
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
+from urllib.parse import quote
 import csv
 import io
 
@@ -68,7 +69,12 @@ def _sync_physchem_measurements(db: Session, sample: SalinitySample, physchem_da
 
 
 @router.get("/measure/{sample_id}", response_class=HTMLResponse)
-async def measure_sample(request: Request, sample_id: str, db: Session = Depends(get_db)):
+async def measure_sample(
+    request: Request,
+    sample_id: str,
+    delete_error: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
     """QR code lands here — shows sample metadata and measurement form."""
     sample = db.query(SalinitySample).filter(SalinitySample.id == sample_id).first()
     if not sample:
@@ -98,6 +104,7 @@ async def measure_sample(request: Request, sample_id: str, db: Session = Depends
         "physchem_authenticated": azure_auth.is_authenticated(),
         "physchem_token_status": azure_auth.get_token_status(),
         "physchem_data": physchem_data,
+        "upload_error": f"Delete failed: {delete_error}" if delete_error else None,
     })
 
 
@@ -323,28 +330,10 @@ async def delete_measurement(
             sample.physchem_upload_id = None
         db.commit()
 
-    physchem_data = None
-    try:
-        physchem_data = await physchem_client.fetch_physchem_values(
-            cruise_id=sample.cruise_id,
-            utc_time=sample.utc_time,
-            latitude=sample.latitude,
-            longitude=sample.longitude,
-            depth_m=sample.depth_m,
-            bottle_number=sample.bottle_number,
-        )
-    except Exception:
-        pass
-
-    db.refresh(sample)
-    return templates.TemplateResponse("measure.html", {
-        "request": request,
-        "sample": sample,
-        "physchem_authenticated": azure_auth.is_authenticated(),
-        "physchem_token_status": azure_auth.get_token_status(),
-        "physchem_data": physchem_data,
-        "upload_error": delete_error,
-    })
+    redirect_url = f"/measure/{sample_id}"
+    if delete_error:
+        redirect_url += f"?delete_error={quote(delete_error)}"
+    return RedirectResponse(url=redirect_url, status_code=303)
 
 
 @router.get("/samples", response_class=HTMLResponse)
