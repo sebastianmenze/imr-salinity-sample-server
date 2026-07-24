@@ -326,8 +326,20 @@ async def delete_measurement(
         db.delete(meas)
         remaining = [m for m in sample.measurements if m.id != measurement_id]
         if not remaining:
-            sample.status = SampleStatus.measured if sample.psal_lab else SampleStatus.in_lab
+            # No measurements left at all — reset to a clean slate so the
+            # entry form is shown again instead of stale cached values.
+            sample.status = SampleStatus.in_lab
+            sample.psal_lab = None
+            sample.measured_by = None
+            sample.measured_at = None
             sample.physchem_upload_id = None
+        else:
+            last = remaining[-1]
+            sample.psal_lab = last.psal_lab
+            sample.measured_by = last.measured_by
+            sample.measured_at = last.measured_at
+            sample.status = SampleStatus.uploaded if last.physchem_reading_id else SampleStatus.measured
+            sample.physchem_upload_id = last.physchem_reading_id or None
         db.commit()
 
     redirect_url = f"/measure/{sample_id}"
