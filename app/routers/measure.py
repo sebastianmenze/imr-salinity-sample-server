@@ -81,10 +81,6 @@ async def measure_sample(
     if not sample:
         raise HTTPException(status_code=404, detail="Sample not found")
 
-    if sample.status == SampleStatus.registered:
-        sample.status = SampleStatus.in_lab
-        db.commit()
-
     try:
         physchem_data = await physchem_client.fetch_physchem_values(
             cruise_id=sample.cruise_id,
