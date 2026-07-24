@@ -308,9 +308,8 @@ async def delete_measurement(
         raise HTTPException(status_code=404, detail="Measurement not found")
 
     delete_error = None
-    if meas.physchem_reading_id and meas.physchem_parameter_id:
+    if meas.physchem_reading_id:
         result = await physchem_client.delete_reading(
-            parameter_id=int(meas.physchem_parameter_id),
             reading_id=int(meas.physchem_reading_id),
         )
         if not result["success"]:

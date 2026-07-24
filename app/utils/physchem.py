@@ -557,17 +557,17 @@ class PhysChemClient:
             return {"success": False, "message": str(e)}
 
 
-    async def delete_reading(self, parameter_id: int, reading_id: int) -> dict:
-        """Delete a single PSAL_LAB reading from PhysChem."""
+    async def delete_reading(self, reading_id: int) -> dict:
+        """Delete a single PSAL_LAB reading from PhysChem (DELETE /reading/{id})."""
         if not self.is_configured():
             return {"success": False, "message": "PhysChem token not set or expired"}
         try:
             async with httpx.AsyncClient(timeout=30) as client:
                 r = await client.delete(
-                    f"{self.base_url}/parameter/{parameter_id}/reading/{reading_id}",
+                    f"{self.base_url}/reading/{reading_id}",
                     headers=self._headers(),
                 )
-                logger.info(f"DELETE /parameter/{parameter_id}/reading/{reading_id} → {r.status_code}: {r.text[:200]}")
+                logger.info(f"DELETE /reading/{reading_id} → {r.status_code}: {r.text[:200]}")
                 r.raise_for_status()
             return {"success": True}
         except httpx.HTTPStatusError as e:
