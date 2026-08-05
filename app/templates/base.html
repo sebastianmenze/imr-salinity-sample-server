@@ -33,6 +33,7 @@
                border: none; text-decoration: none; text-align: center; }
         .btn-primary { background: #003366; color: white; width: 100%; margin-top: 16px; }
         .btn-primary:hover { background: #004080; }
+        .btn-primary:disabled { background: #a0aec0; cursor: not-allowed; }
         .btn-secondary { background: #e2e8f0; color: #2d3748; }
         .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .meta-item { background: #f7fafc; border-radius: 6px; padding: 8px 10px; }
@@ -75,7 +76,54 @@
 <div class="nav">
     <a href="/">📋 New Sample</a>
     <a href="/samples">📊 All Samples</a>
+    <a href="/measured-today">🧪 Measured Today</a>
     <a href="/guide">📖 User Guide</a>
 </div>
+<script>
+/* QR barcode scanner intercept
+   USB scanners act as keyboards and type very fast (< 30ms between chars).
+   We buffer rapid keypresses and on Enter open any /measure/ URL in a new tab.
+   Normal human typing (~100ms+ between keys) is ignored. */
+(function () {
+    var buf = '', lastKey = 0;
+    var THRESHOLD = 50; // ms — scanners: ~1ms, humans: ~100ms+
+
+    document.addEventListener('keydown', function (e) {
+        var now = Date.now();
+        var delta = now - lastKey;
+        lastKey = now;
+
+        if (e.key === 'Enter') {
+            var text = buf.trim();
+            buf = '';
+            if (!text) return;
+
+            var url = null;
+            if (text.indexOf('/measure/') !== -1) {
+                // Full URL from QR code
+                url = text;
+            } else if (/^[0-9a-f]{8}$/i.test(text)) {
+                // Plain 8-char sample ID
+                url = window.location.origin + '/measure/' + text;
+            }
+
+            if (url) {
+                e.preventDefault();
+                window.open(url, '_blank');
+            }
+            return;
+        }
+
+        if (delta > THRESHOLD) {
+            // Gap too large — human typing, reset buffer
+            buf = '';
+        }
+
+        if (e.key.length === 1) {
+            buf += e.key;
+        }
+    });
+})();
+</script>
 </body>
 </html>

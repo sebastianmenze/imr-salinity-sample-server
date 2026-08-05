@@ -4,12 +4,13 @@ Handles QR scan landing page and salinity measurement submission.
 """
 
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
-import uuid
+from urllib.parse import quote
 import csv
 import io
 
@@ -69,15 +70,16 @@ def _sync_physchem_measurements(db: Session, sample: SalinitySample, physchem_da
 
 
 @router.get("/measure/{sample_id}", response_class=HTMLResponse)
-async def measure_sample(request: Request, sample_id: uuid.UUID, db: Session = Depends(get_db)):
+async def measure_sample(
+    request: Request,
+    sample_id: str,
+    delete_error: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
     """QR code lands here — shows sample metadata and measurement form."""
     sample = db.query(SalinitySample).filter(SalinitySample.id == sample_id).first()
     if not sample:
         raise HTTPException(status_code=404, detail="Sample not found")
-
-    if sample.status == SampleStatus.registered:
-        sample.status = SampleStatus.in_lab
-        db.commit()
 
     try:
         physchem_data = await physchem_client.fetch_physchem_values(
@@ -99,13 +101,14 @@ async def measure_sample(request: Request, sample_id: uuid.UUID, db: Session = D
         "physchem_authenticated": azure_auth.is_authenticated(),
         "physchem_token_status": azure_auth.get_token_status(),
         "physchem_data": physchem_data,
+        "upload_error": f"Delete failed: {delete_error}" if delete_error else None,
     })
 
 
 @router.post("/measure/{sample_id}", response_class=HTMLResponse)
 async def submit_measurement(
     request: Request,
-    sample_id: uuid.UUID,
+    sample_id: str,
     psal_lab: float = Form(...),
     measured_by: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
@@ -138,7 +141,7 @@ async def submit_measurement(
     upload_result = {"success": False, "message": "PhysChem not configured"}
     if physchem_client.is_configured():
         upload_result = await physchem_client.upload_measurement(
-            sample_id=str(sample.id),
+            sample_id=sample.id,
             utc_time=sample.utc_time,
             latitude=sample.latitude,
             longitude=sample.longitude,
@@ -158,6 +161,7 @@ async def submit_measurement(
             sample.physchem_upload_id = upload_result.get("upload_id", "")
             sample.physchem_operation_id = str(upload_result.get("operation_id", ""))
             meas.physchem_reading_id = str(upload_result.get("reading_id", ""))
+            meas.physchem_parameter_id = str(upload_result.get("parameter_id", ""))
             meas.physchem_ordinal = upload_result.get("physchem_ordinal")
             db.commit()
 
@@ -205,7 +209,7 @@ async def submit_measurement(
 @router.post("/measure/{sample_id}/upload", response_class=HTMLResponse)
 async def retry_physchem_upload(
     request: Request,
-    sample_id: uuid.UUID,
+    sample_id: str,
     db: Session = Depends(get_db),
 ):
     """Retry PhysChem upload for an already-measured sample."""
@@ -288,6 +292,60 @@ async def retry_physchem_upload(
     })
 
 
+@router.post("/measure/{sample_id}/measurement/{measurement_id}/delete", response_class=HTMLResponse)
+async def delete_measurement(
+    request: Request,
+    sample_id: str,
+    measurement_id: int,
+    db: Session = Depends(get_db),
+):
+    """Delete a PSAL_LAB reading from PhysChem and remove it from local DB."""
+    sample = db.query(SalinitySample).filter(SalinitySample.id == sample_id).first()
+    if not sample:
+        raise HTTPException(status_code=404, detail="Sample not found")
+
+    meas = db.query(SampleMeasurement).filter(
+        SampleMeasurement.id == measurement_id,
+        SampleMeasurement.sample_id == sample_id,
+    ).first()
+    if not meas:
+        raise HTTPException(status_code=404, detail="Measurement not found")
+
+    delete_error = None
+    if meas.physchem_reading_id:
+        result = await physchem_client.delete_reading(
+            reading_id=int(meas.physchem_reading_id),
+        )
+        if not result["success"]:
+            delete_error = result.get("message", "Unknown error")
+
+    # Always remove the local record and reset the sample so the entry form
+    # reappears, even if the PhysChem-side delete failed (e.g. the reading was
+    # already removed there, or the API call errored) — the delete_error is
+    # still surfaced to the user as a warning, but never blocks local cleanup.
+    db.delete(meas)
+    remaining = [m for m in sample.measurements if m.id != measurement_id]
+    if not remaining:
+        sample.status = SampleStatus.in_lab
+        sample.psal_lab = None
+        sample.measured_by = None
+        sample.measured_at = None
+        sample.physchem_upload_id = None
+    else:
+        last = remaining[-1]
+        sample.psal_lab = last.psal_lab
+        sample.measured_by = last.measured_by
+        sample.measured_at = last.measured_at
+        sample.status = SampleStatus.uploaded if last.physchem_reading_id else SampleStatus.measured
+        sample.physchem_upload_id = last.physchem_reading_id or None
+    db.commit()
+
+    redirect_url = f"/measure/{sample_id}"
+    if delete_error:
+        redirect_url += f"?delete_error={quote(delete_error)}"
+    return RedirectResponse(url=redirect_url, status_code=303)
+
+
 @router.get("/samples", response_class=HTMLResponse)
 async def list_samples(
     request: Request,
@@ -309,6 +367,27 @@ async def list_samples(
     })
 
 
+@router.get("/measured-today", response_class=HTMLResponse)
+async def measured_today(request: Request, db: Session = Depends(get_db)):
+    """Show every lab measurement logged (measured or synced) since midnight UTC today."""
+    today = datetime.utcnow().date()
+    today_start = datetime(today.year, today.month, today.day)
+    logged_at = func.coalesce(SampleMeasurement.measured_at, SampleMeasurement.created_at)
+
+    rows = (
+        db.query(SampleMeasurement)
+        .join(SalinitySample)
+        .filter(logged_at >= today_start)
+        .order_by(logged_at.desc())
+        .all()
+    )
+
+    return templates.TemplateResponse("measured_today.html", {
+        "request": request,
+        "rows": rows,
+    })
+
+
 @router.get("/samples/export.csv")
 async def export_samples_csv(db: Session = Depends(get_db)):
     samples = db.query(SalinitySample).order_by(SalinitySample.utc_time.desc()).all()
@@ -316,7 +395,7 @@ async def export_samples_csv(db: Session = Depends(get_db)):
     fields = [
         "id", "utc_time", "latitude", "longitude", "depth_m",
         "platform_id", "cruise_id", "station_id", "cast_number", "bottle_number",
-        "psal_1", "psal_2", "status", "source", "created_at",
+        "psal_1", "psal_2", "sampling_comment", "status", "source", "created_at",
         "measurement_ordinal", "psal_lab", "measured_by", "measured_at",
         "measurement_notes", "physchem_reading_id", "physchem_operation_id",
     ]
@@ -326,13 +405,14 @@ async def export_samples_csv(db: Session = Depends(get_db)):
     writer.writerow(fields)
     for s in samples:
         meta = [
-            str(s.id),
+            s.id,
             s.utc_time.strftime("%Y-%m-%dT%H:%M:%SZ") if s.utc_time else "",
             s.latitude, s.longitude, s.depth_m,
             s.platform_id, s.cruise_id or "", s.station_id or "",
             s.cast_number or "", s.bottle_number or "",
             s.psal_1 if s.psal_1 is not None else "",
             s.psal_2 if s.psal_2 is not None else "",
+            s.notes or "",
             s.status.value,
             s.source or "",
             s.created_at.strftime("%Y-%m-%dT%H:%M:%SZ") if s.created_at else "",

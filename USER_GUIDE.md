@@ -57,15 +57,21 @@ Use this for samples taken without a Seabird CTD (e.g. bucket samples, underway 
 
 After registration the system shows a **View Label** link and a **Download Label PDF** button.
 
-- The PDF is sized for the **Phomemo M110** label printer (50 × 30 mm).
-- Each label shows: vessel, time, position, depth, bottle number, and a QR code.
-- Dry the sample bottle once it is filled with a towel or wipe
-- Than immediately attach the label to the **dry** sample bottle before it leaves the CTD deck.
+- For each bottle download and open PDF Label and print it with **Phomemo M110** label printer (50 × 30 mm, fit to paper).
 
 See **Appendix — Setting Up the Phomemo M110 on Windows** at the bottom of this guide for first-time printer setup.
 
 ![Phomemo M110 label printer](images/printer.png)
 *Phomemo M110 connected via USB/CSBC.*
+
+### Attaching Labels
+- Fill sample bottle 
+- Dry the sample bottle with a towel or wipe
+- Than immediately attach the label to the **dry** sample bottle as shown
+- Done!
+
+![Bottle and label](images/bottle.png)
+*Label attached to salinity sample bottle*
 
 ---
 
@@ -86,9 +92,9 @@ The token is valid for **1 hour**. A live countdown is shown on every measuremen
 
 ### Step 2 — Open the Measurement Page
 
-Be connected to the IMR network (WiFi). Scan the QR code on the sample label with the Barcode scanner connected to your PC, or any tablet, phone or PC. This opens the measurement page for that specific sample.
+Be connected to the IMR network (WiFi). In a browser open the website **http://nautilus.imr.no:8000** and have it as active tab. Connect the Barcode scanner to your PC and start scanning a bottle label QR code by pressing the trigger. This opens the measurement page for that specific sample. It is also possible to scan the label using any tablet, phone or PC with a camera.
 
-The page shows the sample metadata (time, position, depth, vessel) and the CTD sensor salinities for reference.
+The measurement page shows the sample metadata (time, position, depth, vessel) and the CTD sensor salinities for reference.
 
 If a PhysChem token is active and the sample has a matching cruise in PhysChem, **existing PhysChem values** (CTD PSAL and any previous PSAL_LAB readings) are shown automatically so you can compare.
 
@@ -115,6 +121,8 @@ The system will:
 If the same bottle is measured again (replicate, re-run), go back to the measurement page (scan the QR code again). A new **Add Additional Measurement** form is shown below the existing values. Submitting it creates a new PhysChem parameter with the next ordinal number (ordinal 2, 3, …) — the original value is never overwritten.
 
 All measurements are listed in the **📋 Lab Measurements** table on the page, showing PSAL_LAB value, who measured it, when, and the PhysChem ordinal.
+
+> To start a new sample, have any salinity samaple website server tab open and simply scan the qr code with the barcode scanner.
 
 ---
 
@@ -144,15 +152,15 @@ Click **⬇️ Download CSV** on the samples list page to download all sample da
 ### At sea:
 
 ### The label printer is broken or out of paper 
-Write the Sample ID (example: `073935ef-3d0f-4a96-a69d-30d92eb20896`) on a post it note or other paper and tape it to the sample.
+Write the Sample ID (example: `e2b1c9ab`) on a post it note or other paper and tape it to the sample.
 
 ### I cannt connect to the salinity tracker website
 Check that you are inside the IMR network and correct WiFi. If the website seem to be down send a mail to sebastian.menze@imr.no and label the sampel with a post it note or other paper, including this data: `Ship name, UTC time, Latitude, Longitude, Station Number, Depth, CTD rosette bottle number`.
 
+### In Lab:
+
 ### "PhysChem token not set"
 Paste a fresh token from https://physchem-token-test.hi.no. Tokens expire after 1 hour.
-
-### In Lab:
 
 ### "No PhysChem mission found matching time/position"
 - Check that the **Cruise ID** was entered during registration. Without it the system searches by time and position, which can fail if the cruise is not yet in PhysChem.
@@ -209,8 +217,6 @@ The driver can default to a roll size that does not match our labels. You must s
 4. Select the **Phomemo M110** as the printer.
 5. Under **Page sizing**, choose fit to page.
 6. Click **Print**.
-
-> **Tip:** If the printed label is too small or too large, re-check that the paper size in printer preferences is exactly 50 × 50 mm and that "Actual size" is selected in the print dialog.
 
 ### 4 — Loading Labels
 
