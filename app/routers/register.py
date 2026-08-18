@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional, List
 import json
+import re
 
 from app.database import get_db
 from app.models.sample import SalinitySample, SampleStatus, _new_short_id
@@ -28,6 +29,23 @@ def _unique_id(db: Session) -> str:
         if not db.query(SalinitySample).filter(SalinitySample.id == sid).first():
             return sid
     raise RuntimeError("Failed to generate a unique sample ID")
+
+
+def _fs_safe(value: str) -> str:
+    """Collapse a string to filesystem-safe characters for use in a download filename."""
+    return re.sub(r"[^A-Za-z0-9]+", "_", value).strip("_")
+
+
+def _label_filename(sample: SalinitySample) -> str:
+    parts = []
+    if sample.platform_id:
+        parts.append(_fs_safe(sample.platform_id))
+    if sample.utc_time:
+        parts.append(sample.utc_time.strftime("%Y%m%dT%H%M"))
+    if sample.bottle_number:
+        parts.append(f"bottle{_fs_safe(str(sample.bottle_number))}")
+    parts.append(sample.id)
+    return "label_" + "_".join(parts) + ".pdf"
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -226,5 +244,5 @@ async def download_label_pdf(request: Request, sample_id: str, db: Session = Dep
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="label_{sample.id}.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="{_label_filename(sample)}"'},
     )
