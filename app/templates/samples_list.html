@@ -7,12 +7,38 @@
 </style>
 
 <div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px">
         <h2 style="margin:0">📊 All Samples (last 200)</h2>
         <a href="/samples/export.csv" class="btn btn-secondary" style="font-size:0.85rem; padding:6px 14px; text-decoration:none">
             ⬇️ Download CSV
         </a>
     </div>
+
+    <form method="get" action="/samples" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:14px">
+        <div style="min-width:180px">
+            <label style="margin-top:0">Vessel</label>
+            <select name="platform" onchange="this.form.submit()">
+                <option value="">All vessels</option>
+                {% for p in platforms %}
+                <option value="{{ p }}" {% if p == selected_platform %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="min-width:180px">
+            <label style="margin-top:0">Cruise</label>
+            <select name="cruise" onchange="this.form.submit()">
+                <option value="">All cruises</option>
+                {% for c in cruises %}
+                <option value="{{ c }}" {% if c == selected_cruise %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% if selected_platform or selected_cruise %}
+        <a href="/samples" class="btn btn-secondary" style="font-size:0.85rem; padding:9px 14px; text-decoration:none">
+            ✕ Clear filters
+        </a>
+        {% endif %}
+    </form>
 
     <div style="overflow-x:auto">
         <table style="width:100%; border-collapse:collapse; font-size:0.78rem">

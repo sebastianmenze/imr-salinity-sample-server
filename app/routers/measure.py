@@ -350,20 +350,38 @@ async def delete_measurement(
 async def list_samples(
     request: Request,
     platform: Optional[str] = None,
+    cruise: Optional[str] = None,
     status: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     query = db.query(SalinitySample)
     if platform:
         query = query.filter(SalinitySample.platform_id == platform)
+    if cruise:
+        query = query.filter(SalinitySample.cruise_id == cruise)
     if status:
         query = query.filter(SalinitySample.status == status)
     samples = query.order_by(SalinitySample.created_at.desc()).limit(200).all()
+
+    platforms = [
+        row[0] for row in
+        db.query(SalinitySample.platform_id).filter(SalinitySample.platform_id.isnot(None))
+        .distinct().order_by(SalinitySample.platform_id).all()
+    ]
+    cruises = [
+        row[0] for row in
+        db.query(SalinitySample.cruise_id).filter(SalinitySample.cruise_id.isnot(None))
+        .distinct().order_by(SalinitySample.cruise_id).all()
+    ]
 
     return templates.TemplateResponse("samples_list.html", {
         "request": request,
         "samples": samples,
         "SampleStatus": SampleStatus,
+        "platforms": platforms,
+        "cruises": cruises,
+        "selected_platform": platform or "",
+        "selected_cruise": cruise or "",
     })
 
 
