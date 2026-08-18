@@ -113,7 +113,8 @@ class PhysChemClient:
             "Accept": "*/*",
         }
 
-    def _editor_url(self, mission_id, operation_id, instrument_id) -> str:
+    def editor_url(self, mission_id, operation_id, instrument_id) -> str:
+        """Build the PhysChem editor deep link — pure string formatting, no auth required."""
         editor_base = self.base_url.replace("-api-", "-editor-")
         return f"{editor_base}/mission/{mission_id}/operation/{operation_id}/instrument/{instrument_id}/parameter"
 
@@ -445,7 +446,7 @@ class PhysChemClient:
                 "instrument_id": instrument_id,
                 "psal_values": psal_values,
                 "psal_lab_values": psal_lab_values,
-                "physchem_url": self._editor_url(mission["id"], operation["id"], instrument_id),
+                "physchem_url": self.editor_url(mission["id"], operation["id"], instrument_id),
             }
 
         except Exception as e:
@@ -545,7 +546,7 @@ class PhysChemClient:
                 "parameter_id": parameter_id,
                 "reading_id": reading_id,
                 "physchem_ordinal": parameter.get("ordinal"),
-                "physchem_url": self._editor_url(mission_id, operation_id, instrument_id),
+                "physchem_url": self.editor_url(mission_id, operation_id, instrument_id),
             }
 
         except httpx.HTTPStatusError as e:

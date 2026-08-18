@@ -140,6 +140,10 @@
         <a href="{{ physchem_data.physchem_url }}" target="_blank" style="color:#003366">View in PhysChem →</a>
     </div>
 </div>
+{% elif physchem_view_url %}
+<div class="card">
+    <a href="{{ physchem_view_url }}" target="_blank" style="color:#003366; font-size:0.85rem">📊 View in PhysChem →</a>
+</div>
 {% endif %}
 
 <div style="display:flex; gap:8px; margin-bottom:16px">
@@ -177,6 +181,9 @@
                 <td style="padding:6px 8px">
                     {% if m.physchem_ordinal %}
                     <span style="color:#276749; font-size:0.8rem">✓ ordinal {{ m.physchem_ordinal }}</span>
+                    {% if physchem_view_url %}
+                    <br><a href="{{ physchem_view_url }}" target="_blank" style="font-size:0.75rem; color:#003366">View in PhysChem →</a>
+                    {% endif %}
                     {% else %}
                     <span style="color:#a0aec0; font-size:0.8rem">not uploaded</span>
                     {% endif %}

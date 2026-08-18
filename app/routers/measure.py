@@ -23,6 +23,19 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 
+def _physchem_view_url(sample: SalinitySample) -> Optional[str]:
+    """
+    Build the PhysChem editor deep link from IDs persisted on the sample.
+    Pure string formatting — works even without an active PhysChem token,
+    as long as the sample has been fetched/uploaded at least once before.
+    """
+    if sample.physchem_mission_id and sample.physchem_operation_id and sample.physchem_instrument_id:
+        return physchem_client.editor_url(
+            sample.physchem_mission_id, sample.physchem_operation_id, sample.physchem_instrument_id
+        )
+    return None
+
+
 def _sync_physchem_measurements(db: Session, sample: SalinitySample, physchem_data: dict) -> bool:
     """
     Upsert PSAL_LAB readings returned by PhysChem into the local sample_measurements table.
@@ -93,6 +106,12 @@ async def measure_sample(
     except Exception:
         physchem_data = None
 
+    if physchem_data:
+        sample.physchem_mission_id = str(physchem_data.get("mission_id", "")) or sample.physchem_mission_id
+        sample.physchem_operation_id = str(physchem_data.get("operation_id", "")) or sample.physchem_operation_id
+        sample.physchem_instrument_id = str(physchem_data.get("instrument_id", "")) or sample.physchem_instrument_id
+        db.commit()
+
     _sync_physchem_measurements(db, sample, physchem_data)
 
     return templates.TemplateResponse("measure.html", {
@@ -101,6 +120,7 @@ async def measure_sample(
         "physchem_authenticated": azure_auth.is_authenticated(),
         "physchem_token_status": azure_auth.get_token_status(),
         "physchem_data": physchem_data,
+        "physchem_view_url": _physchem_view_url(sample),
         "upload_error": f"Delete failed: {delete_error}" if delete_error else None,
     })
 
@@ -159,7 +179,9 @@ async def submit_measurement(
         if upload_result["success"]:
             sample.status = SampleStatus.uploaded
             sample.physchem_upload_id = upload_result.get("upload_id", "")
+            sample.physchem_mission_id = str(upload_result.get("mission_id", ""))
             sample.physchem_operation_id = str(upload_result.get("operation_id", ""))
+            sample.physchem_instrument_id = str(upload_result.get("instrument_id", ""))
             meas.physchem_reading_id = str(upload_result.get("reading_id", ""))
             meas.physchem_parameter_id = str(upload_result.get("parameter_id", ""))
             meas.physchem_ordinal = upload_result.get("physchem_ordinal")
@@ -180,6 +202,7 @@ async def submit_measurement(
             "sample": sample,
             "upload_result": upload_result,
             "physchem_data": physchem_data,
+            "physchem_view_url": _physchem_view_url(sample),
         })
 
     # Upload failed — restore uploaded status if this was an additional measurement attempt
@@ -203,6 +226,7 @@ async def submit_measurement(
         "upload_error": upload_result.get("message", "Unknown error"),
         "upload_error_url": upload_result.get("physchem_url"),
         "physchem_data": physchem_data,
+        "physchem_view_url": _physchem_view_url(sample),
     })
 
 
@@ -241,7 +265,9 @@ async def retry_physchem_upload(
     if upload_result["success"]:
         sample.status = SampleStatus.uploaded
         sample.physchem_upload_id = upload_result.get("upload_id", "")
+        sample.physchem_mission_id = str(upload_result.get("mission_id", ""))
         sample.physchem_operation_id = str(upload_result.get("operation_id", ""))
+        sample.physchem_instrument_id = str(upload_result.get("instrument_id", ""))
         # Update the most recent measurement record that hasn't been linked to PhysChem yet
         pending = (
             db.query(SampleMeasurement)
@@ -270,6 +296,7 @@ async def retry_physchem_upload(
             "sample": sample,
             "upload_result": upload_result,
             "physchem_data": physchem_data,
+            "physchem_view_url": _physchem_view_url(sample),
         })
 
     db.refresh(sample)
@@ -289,6 +316,7 @@ async def retry_physchem_upload(
         "upload_error": upload_result.get("message", "Unknown error"),
         "upload_error_url": upload_result.get("physchem_url"),
         "physchem_data": physchem_data,
+        "physchem_view_url": _physchem_view_url(sample),
     })
 
 
